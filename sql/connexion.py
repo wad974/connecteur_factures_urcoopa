@@ -11,7 +11,8 @@ def recupere_connexion_db() :
         host= os.getenv('DB_URL_HOST'), 
         port= os.getenv('DB_URL_PORT'),
         user= os.getenv('DB_URL_USER'),
-        password= os.getenv('DB_URL_PASSWORD')
+        password= os.getenv('DB_URL_PASSWORD'),
+        database= os.getenv('DB_URL_DATABASE')
     )
     
     return login

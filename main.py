@@ -31,7 +31,7 @@ client = zeep.Client(wsdl=WSDL_URL)  # on crée le client UNE fois
 app = FastAPI()
 
 @app.get("/factures/")
-async def get_factures(xCleAPI: str, nb_jours: int = 10):
+async def get_factures(xCleAPI: str, nb_jours: int = 30):
     try:
         response = client.service.Get_Factures_Sicalait(xCleAPI=xCleAPI, NbJours=nb_jours)
 
@@ -41,31 +41,30 @@ async def get_factures(xCleAPI: str, nb_jours: int = 10):
         factures = json.loads(response)
         
         # boucles sur factures pour recuperer les datas json
+        crud = CRUD()
+
         for row in factures:
             
-            '''
-                on recupere les champs nécéssaires pour write dans la base de données
-                à creer connexion SQL + fonction create base de données si not 
-                et update si déjà present : 
-                
-                Faire une verification des champs if none ou not
-                select sur db
-                
-                Faire une verication if isExist or not
-                If true => update 
-                If False => create
-                
-            datas = {
-                "Numero_Facture": row["Numero_Facture"],
-                "Type_Facture": row["Type_Facture"],
-                "Date_Facture": row["Date_Facture"],
-                "Date_Echeance": row["Date_Echeance"]
-                }
-            '''   
-            #await CRUD.create(datas)
-            #await CRUD.update(datas)
+            await crud.create(row)
             
+            '''
+            numero_facture = row.get("Numero_Facture")
+            resultat = await crud.read(numero_facture)
 
+
+            
+            if resultat is None:
+                print(f"Facture {numero_facture} absente ➔ Création")
+                await crud.create(row)
+            else:
+                # Comparer l'existant avec le nouveau row
+                if not crud.is_same_facture(resultat, row):
+                    print(f"Facture {numero_facture} différente ➔ Update")
+                    await crud.update(row)
+                else:
+                    print(f"Facture {numero_facture} déjà à jour ➔ Rien à faire")
+            '''
+            
         return {"factures": factures}
 
     except json.JSONDecodeError:
