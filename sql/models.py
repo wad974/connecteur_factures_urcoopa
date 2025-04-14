@@ -50,21 +50,22 @@ class CRUD:
             cursor.close()
     
     # Méthode READ
-    async def read(self, numero_facture ):
+    async def read(self, numero_facture : str ):
         cnx = self.connexion
-        cursor = cnx.cursor(dictionary=True)  # pour récupérer un dict et comparer facilement
+        cursor = cnx.cursor()  # pour récupérer un dict et comparer facilement
+        
+        #print(numero_facture)
         try:
             query = "SELECT * FROM exportodoo.sic_urcoopa_facture WHERE Numero_Facture = %s"
-            cursor.execute(query, (numero_facture,))
-            resultat = cursor.fetchone()
+            value = ( numero_facture,)
+            cursor.execute(query, value)
+            resultat = cursor.fetchall()
+            cursor.close()
             
             return resultat  # soit None soit un dict complet
             
         except mysql.connector.Error as err:
             print('Erreur :', err)
-            return None
-        finally:
-            cursor.close()
             
     
     # Méthode UPDATE
@@ -100,8 +101,9 @@ class CRUD:
             cursor.close()
             
     # Méthode comparer champs
-    def is_same_facture(self, db_facture: dict, new_facture: dict) -> bool:
+    def est_meme_facture(self, db_facture: dict, new_facture: dict) -> bool:
         # Comparer les champs importants
+        # ce que qu'on veut vérifier
         champs_a_verifier = [
                     "ID", "Numero_Facture", "Type_Facture", "Date_Facture", "Date_Echeance", 
                     "Societe_Facture", "Code_Client", "Nom_Client", "Type_Client", "Montant_HT", 
@@ -111,8 +113,18 @@ class CRUD:
                     "Commentaires", "Numero_Commande_Client", "Date_Commande_Client", 
                     "Numero_Commande_ODOO", "Code_Produit_ODOO", "ID_Produit_ODOO", 
                     "Code_Client_ODOO", "ID_Client_ODOO", "Societe_Facture_ODOO", "ID_Facture_ODOO"
-                ]# ce que tu veux vérifier
+                ]
+        
+        #print('db _ facture :',db_facture)
+        print(type(db_facture))
+        print(type(new_facture))
+        
+        
         for champ in champs_a_verifier:
-            if db_facture.get(champ) != new_facture.get(champ):
+            print( 'champ : ',champ)
+            '''
+            if db_facture[champ] != new_facture.get(champ):
                 return False  # si un champ est différent
+            '''
         return True  # sinon tout est pareil
+        

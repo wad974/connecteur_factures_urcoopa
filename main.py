@@ -45,27 +45,27 @@ async def get_factures(xCleAPI: str, nb_jours: int = 30):
 
         for row in factures:
             
-            await crud.create(row)
-            
-            '''
             numero_facture = row.get("Numero_Facture")
             resultat = await crud.read(numero_facture)
-
-
             
-            if resultat is None:
+            #print(f'retour resultat read : {resultat}')
+            
+            if len(resultat) == 0:
                 print(f"Facture {numero_facture} absente ➔ Création")
                 await crud.create(row)
+
             else:
+                '''     
                 # Comparer l'existant avec le nouveau row
-                if not crud.is_same_facture(resultat, row):
+                if not crud.est_meme_facture(resultat, row):
                     print(f"Facture {numero_facture} différente ➔ Update")
-                    await crud.update(row)
+                    #await crud.update(row)
+
                 else:
-                    print(f"Facture {numero_facture} déjà à jour ➔ Rien à faire")
-            '''
-            
-        return {"factures": factures}
+                '''
+                print(f"Facture {numero_facture} déjà creer ➔ Rien à faire")
+                
+        return {"Messages": 'Récuperation factures urcoopa Ok !'}
 
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Erreur de décodage JSON.")
