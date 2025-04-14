@@ -101,6 +101,9 @@ class CRUD:
             cursor.close()
             
     # Méthode comparer champs
+    '''
+        à faire si besoin pour la partie UPDATE
+    '''
     def est_meme_facture(self, db_facture: dict, new_facture: dict) -> bool:
         # Comparer les champs importants
         # ce que qu'on veut vérifier
