@@ -1,0 +1,559 @@
+<style>
+    .container-apprentissage {
+        width: 70%;
+        height: auto;
+        border-radius: 1em;
+        background-color: white;
+        margin: auto;
+    }
+
+    .form-input {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .o_form_view .o_form_sheet_bg {
+        max-width: none;
+    }
+
+    .information-article {
+        display: none;
+    }
+
+    .td-footer {
+        width: 100%;
+        background-color: lightgray !important;
+        color: white;
+        margin-top: 10px !important;
+    }
+
+    .table-wrapper {
+        width: 100%;
+    }
+
+    .table-body-scroll {
+        max-height: 300px;
+        /* hauteur à ajuster */
+        overflow-y: auto;
+    }
+
+    .table-body-scroll table {
+        table-layout: fixed;
+        width: 100%;
+    }
+</style>
+
+<div class="container-apprentissage">
+    <div class="apprentissage">
+        <div class="modal-content" style="top: 0px; left: 0px;">
+            <header class="modal-header">
+                <h4 class="modal-title text-break">Définissez les champs à récupéré de votre facture-ocr</h4><button
+                    type="button" class=" btn-close btn-close-apprentissage" aria-label="Close" tabindex="-1"></button>
+            </header>
+            <!--footer submit-->
+            <footer class="modal-footer justify-content-around justify-content-md-start flex-wrap gap-1 w-100"
+                style="order:2">
+                <div class="o_cp_buttons d-flex align-items-baseline w-100" role="toolbar" aria-label="Main actions">
+                    <div class="o_form_buttons_edit d-flex gap-1"><button type="button"
+                            class="btn btn-primary o_form_button_save" data-hotkey="s"> Envoyer </button><button
+                            type="button" class="btn btn-secondary o_form_button_cancel" data-hotkey="j"> Ignorer
+                        </button></div>
+                </div>
+            </footer>
+            <form action="" method="post" id="myForm" name="myForm">
+                <main class="modal-body p-0 o_act_window">
+                    <div class="o_form_view o_company_onboarding_form_view o_view_controller">
+                        <div class="o_form_view_container">
+                            <div class="o_content">
+                                <div class="o_form_renderer o_form_editable d-flex o_form_saved flex-column">
+                                    <div class="o_form_sheet_bg">
+                                        <div class="o_form_sheet position-relative">
+                                            <div class="o_field_widget o_field_image oe_avatar">
+                                                <div class="d-inline-block position-relative opacity-trigger-hover">
+
+                                                    <!-- Bouton pour sélectionner un fichier -->
+                                                    <input id="file_input" type="file" class="o_input_file"
+                                                        accept="application/pdf">
+
+                                                </div>
+                                            </div>
+                                            <div class="oe_title"><label class="o_form_label" for="name_0">Nom du
+                                                    fournisseur</label>
+                                                <h1>
+                                                    <div name="name"
+                                                        class="o_field_widget o_required_modifier o_field_field_partner_autocomplete">
+                                                        <div class="o-autocomplete dropdown"><input type="text"
+                                                                name="nomFournisseurFacture" id='nomFournisseurFacture'
+                                                                required class="o-autocomplete--input o_input"
+                                                                autocomplete="off" role="combobox"
+                                                                aria-autocomplete="list" aria-haspopup="listbox"
+                                                                placeholder="ex: BUBIMEX" aria-expanded="false"></div>
+                                                    </div>
+                                                </h1>
+                                            </div>
+                                            <div class="o_notebook d-flex w-100 horizontal flex-column">
+                                                <div class="o_notebook_headers">
+                                                    <ul class="nav nav-tabs flex-row flex-nowrap">
+                                                        <li class="nav-item flex-nowrap cursor-pointer"><a
+                                                                class="nav-link active btn-tab-generale" href="#"
+                                                                role="tab" tabindex="0" name="general_info">Informations
+                                                                générales</a></li>
+                                                        <li class="nav-item flex-nowrap cursor-pointer"><a
+                                                                class="nav-link active btn-tab-article" href="#"
+                                                                role="tab" tabindex="0" name="general_info">Informations
+                                                                articles</a></li>
+                                                    </ul>
+                                                </div>
+
+                                                <!-- TABLE INFORMATIONS GENERALE-->
+                                                <div id="information-generale"
+                                                    class="o_notebook_content tab-content information-generale">
+                                                    <div class="tab-pane active">
+                                                        <div class="o_group row align-items-start">
+                                                            <div class="o_inner_group grid col-lg-6">
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label
+                                                                            class="o_form_label o_form_label_readonly"
+                                                                            for="partner_id_0">N° Facture</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell flex-grow-1 flex-sm-grow-0 o_wrap_label w-100 text-break text-900">
+                                                                        <label class="o_form_label" for="street_0">(ex :
+                                                                            )</label>
+                                                                    </div>
+                                                                    <div class="o_cell flex-grow-1 flex-sm-grow-0"
+                                                                        style="width: 100%;">
+                                                                        <div class="o_address_format">
+                                                                            <div name="street"
+                                                                                class="o_field_widget o_field_char o_address_street">
+                                                                                <input name='numeroFacture'
+                                                                                    class="o_input" id="street_0 "
+                                                                                    required type="text"
+                                                                                    autocomplete="off"
+                                                                                    placeholder="170239">
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label" for="vat_0">Votre
+                                                                            Référence<sup class="text-info p-1"
+                                                                                data-tooltip-template="web.FieldTooltip"
+                                                                                data-tooltip-info="{&quot;field&quot;:{&quot;help&quot;:&quot;Le numéro de registre de la société. Utilisez-le s'il est différent du numéro d'identification fiscale. Il doit être unique parmi tous les partenaires d'un même pays&quot;}}"
+                                                                                data-tooltip-touch-tap-to-show="true">?</sup></label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="vat"
+                                                                            class="o_field_widget o_field_field_partner_autocomplete">
+                                                                            <div class="o-autocomplete dropdown"><input
+                                                                                    name="numeroReferenceFacture"
+                                                                                    required type="text"
+                                                                                    class="o-autocomplete--input o_input"
+                                                                                    autocomplete="off" role="combobox"
+                                                                                    aria-autocomplete="list"
+                                                                                    aria-haspopup="listbox"
+                                                                                    placeholder="688382 M29"
+                                                                                    aria-expanded="false"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label"
+                                                                            for="company_registry_0">Client :<sup
+                                                                                class="text-info p-1"
+                                                                                data-tooltip-template="web.FieldTooltip"
+                                                                                data-tooltip-info="{&quot;field&quot;:{&quot;help&quot;:&quot;Le numéro de registre de la société. Utilisez-le s'il est différent du numéro d'identification fiscale. Il doit être unique parmi tous les partenaires d'un même pays&quot;}}"
+                                                                                data-tooltip-touch-tap-to-show="true">?</sup></label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="company_registry"
+                                                                            class="o_field_widget o_field_char"><input
+                                                                                name="numeroClientFacture"
+                                                                                class="o_input" id="company_registry_0"
+                                                                                type="text" autocomplete="off"
+                                                                                placeholder="CLI01172"></div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label"
+                                                                            for="currency_id_0">N°
+                                                                            référence article :</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="currency_id"
+                                                                            class="o_field_widget o_required_modifier o_field_many2one">
+                                                                            <div class="o_field_many2one_selection">
+                                                                                <div class="o_input_dropdown">
+                                                                                    <div
+                                                                                        class="o-autocomplete dropdown">
+                                                                                        <input type="text"
+                                                                                            name="numeroReferenceArticleFacture"
+                                                                                            class="o-autocomplete--input o_input"
+                                                                                            autocomplete="off"
+                                                                                            role="combobox"
+                                                                                            aria-autocomplete="list"
+                                                                                            aria-haspopup="listbox"
+                                                                                            id="currency_id_0"
+                                                                                            placeholder="688382 M29"
+                                                                                            aria-expanded="false">
+                                                                                    </div>
+                                                                                    <span
+                                                                                        class="o_dropdown_button"></span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="o_field_many2one_extra"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label"
+                                                                            for="company_registry_0">Désignation :<sup
+                                                                                class="text-info p-1"
+                                                                                data-tooltip-template="web.FieldTooltip"
+                                                                                data-tooltip-info="{&quot;field&quot;:{&quot;help&quot;:&quot;Le numéro de registre de la société. Utilisez-le s'il est différent du numéro d'identification fiscale. Il doit être unique parmi tous les partenaires d'un même pays&quot;}}"
+                                                                                data-tooltip-touch-tap-to-show="true">?</sup></label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="company_registry"
+                                                                            class="o_field_widget o_field_char"><input
+                                                                                name="numeroDesignationArticleFacture"
+                                                                                class="o_input" id="company_registry_0"
+                                                                                type="text" autocomplete="off"
+                                                                                placeholder="Bubi Nature Junior, poulet, 70g">
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="o_inner_group grid col-lg-6">
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label" for="phone_0">Date
+                                                                            Facture</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="phone"
+                                                                            class="o_field_widget o_field_char o_force_ltr">
+                                                                            <input class="o_input" id="phone_0"
+                                                                                name="dateFacture" type="text"
+                                                                                autocomplete="off"
+                                                                                placeholder="12-12-2025">
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label"
+                                                                            for="mobile_0">EAN</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="mobile"
+                                                                            class="o_field_widget o_field_char o_force_ltr">
+                                                                            <input class="o_input" id="mobile_0"
+                                                                                name="eanFacture" type="text"
+                                                                                autocomplete="off"
+                                                                                placeholder="4250078990635">
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label"
+                                                                            for="email_0">Quantité</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="email"
+                                                                            class="o_field_widget o_field_char"><input
+                                                                                name="quantiteFacture" class="o_input"
+                                                                                required id="email_0" type="text"
+                                                                                placeholder="20" autocomplete="off">
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label" for="website_0">Prix
+                                                                            unitaire</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="website"
+                                                                            class="o_field_widget o_field_url">
+                                                                            <div class="d-inline-flex w-100"><input
+                                                                                    class="o_input" type="text"
+                                                                                    autocomplete="off" id="website_0"
+                                                                                    placeholder="0,7800"><a
+                                                                                    class="ms-3 d-inline-flex align-items-center"
+                                                                                    target="" href=""><i
+                                                                                        class="fa fa-globe"
+                                                                                        data-tooltip="Aller"
+                                                                                        aria-label="Go"></i></a>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label"
+                                                                            for="parent_id_0">Remise</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="parent_id"
+                                                                            class="o_field_widget o_field_many2one">
+                                                                            <div class="o_field_many2one_selection">
+                                                                                <div class="o_input_dropdown">
+                                                                                    <div
+                                                                                        class="o-autocomplete dropdown">
+                                                                                        <input type="text" required
+                                                                                            name="remiseFacture"
+                                                                                            class="o-autocomplete--input o_input"
+                                                                                            autocomplete="off"
+                                                                                            role="combobox"
+                                                                                            aria-autocomplete="list"
+                                                                                            aria-haspopup="listbox"
+                                                                                            id="parent_id_0"
+                                                                                            placeholder="20"
+                                                                                            aria-expanded="false">(%)
+                                                                                    </div>
+                                                                                    <span
+                                                                                        class="o_dropdown_button"></span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="o_field_many2one_extra"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label class="o_form_label"
+                                                                            for="alias_domain_id_0">Montant
+                                                                            article</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="alias_domain_id"
+                                                                            class="o_field_widget o_field_many2one">
+                                                                            <div class="o_field_many2one_selection">
+                                                                                <div class="o_input_dropdown">
+                                                                                    <div
+                                                                                        class="o-autocomplete dropdown">
+                                                                                        <input type="text" required
+                                                                                            name="montantArticleFacture"
+                                                                                            class="o-autocomplete--input o_input"
+                                                                                            autocomplete="off"
+                                                                                            role="combobox"
+                                                                                            aria-autocomplete="list"
+                                                                                            aria-haspopup="listbox"
+                                                                                            id="alias_domain_id_0"
+                                                                                            placeholder="16.85 "
+                                                                                            aria-expanded="false">
+                                                                                    </div>
+                                                                                    <span
+                                                                                        class="o_dropdown_button"></span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="o_field_many2one_extra"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label
+                                                                            class="o_form_label o_form_label_empty o_form_label_readonly"
+                                                                            for="bounce_formatted_0">Rebond</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="bounce_formatted"
+                                                                            class="o_field_widget o_readonly_modifier o_field_empty o_field_char">
+                                                                            <span></span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    class="o_wrap_field d-flex d-sm-contents flex-column mb-3 mb-sm-0">
+                                                                    <div
+                                                                        class="o_cell o_wrap_label flex-grow-1 flex-sm-grow-0 w-100 text-break text-900">
+                                                                        <label
+                                                                            class="o_form_label o_form_label_empty o_form_label_readonly"
+                                                                            for="catchall_formatted_0">Catchall</label>
+                                                                    </div>
+                                                                    <div class="o_cell o_wrap_input flex-grow-1 flex-sm-grow-0 text-break"
+                                                                        style="width: 100%;">
+                                                                        <div name="catchall_formatted"
+                                                                            class="o_field_widget o_readonly_modifier o_field_empty o_field_char">
+                                                                            <span></span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- TABLE INFORMATIONS ARTICLES-->
+                                                <div id="information-article"
+                                                    class="o_notebook_content tab-content information-article">
+                                                    <div class="tab-pane active">
+                                                        <div class="o_group row align-items-start table-body-scroll">
+
+                                                            <table id="articles-table"
+                                                                class="o_list_table table table-sm table-hover position-relative mb-0 o_list_table_ungrouped table-striped table-striped table-bordered "
+                                                                style="table-layout: fixed;">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th data-tooltip-delay="1000" tabindex="-1"
+                                                                            data-name="name"
+                                                                            class="align-middle o_column_sortable position-relative cursor-pointer opacity-trigger-hover">
+                                                                            <div class="d-flex"><span
+                                                                                    class="d-block min-w-0 text-truncate flex-grow-1">Ref
+                                                                                    article</span>
+                                                                            </div>
+                                                                        </th>
+                                                                        <th data-tooltip-delay="1000" tabindex="-1"
+                                                                            data-name="invoice_partner_display_name"
+                                                                            class="align-middle o_column_sortable position-relative cursor-pointer opacity-trigger-hover"
+                                                                            style="width: 315px;">
+                                                                            <div class="d-flex"><span
+                                                                                    class="d-block min-w-0 text-truncate flex-grow-1">Désignation</span>
+                                                                            </div>
+                                                                        </th>
+                                                                        <th data-tooltip-delay="1000" tabindex="-1"
+                                                                            data-name="invoice_date"
+                                                                            class="align-middle o_column_sortable position-relative cursor-pointer opacity-trigger-hover">
+                                                                            <div class="d-flex"><span
+                                                                                    class="d-block min-w-0 text-truncate flex-grow-1">Quantité
+                                                                            </div>
+                                                                        </th>
+                                                                        <th data-tooltip-delay="1000" tabindex="-1"
+                                                                            data-name="invoice_date_due"
+                                                                            class="align-middle o_column_sortable position-relative cursor-pointer o_remaining_days_cell opacity-trigger-hover">
+                                                                            <div class="d-flex"><span
+                                                                                    class="d-block min-w-0 text-truncate flex-grow-1">EAN</span>
+                                                                            </div>
+                                                                        </th>
+                                                                        <th data-tooltip-delay="1000" tabindex="-1"
+                                                                            data-name="activity_ids"
+                                                                            class="align-middle cursor-default o_list_activity_cell opacity-trigger-hover">
+                                                                            <div class="d-flex"><span
+                                                                                    class="d-block min-w-0 text-truncate flex-grow-1">Prix
+                                                                                    Unitaire</span>
+                                                                            </div>
+                                                                        </th>
+                                                                        <th data-tooltip-delay="1000" tabindex="-1"
+                                                                            data-name="amount_untaxed_signed"
+                                                                            class="align-middle o_column_sortable position-relative cursor-pointer o_list_number_th opacity-trigger-hover">
+                                                                            <div class="d-flex flex-row-reverse"><span
+                                                                                    class="d-block min-w-0 text-truncate flex-grow-1 o_list_number_th">Remise</span>
+                                                                            </div>
+                                                                        </th>
+                                                                        <th data-tooltip-delay="1000" tabindex="-1"
+                                                                            data-name="amount_total_signed"
+                                                                            class="align-middle o_column_sortable position-relative cursor-pointer o_list_number_th opacity-trigger-hover">
+                                                                            <div class="d-flex flex-row-reverse"><span
+                                                                                    class="d-block min-w-0 text-truncate flex-grow-1 o_list_number_th">Total</span>
+                                                                            </div>
+                                                                        </th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody tbody id="articles-body">
+                                                                    <tr>
+                                                                        <td>
+                                                                            <input type="text"
+                                                                                name="numeroReferenceArticleFacture"
+                                                                                class="form-control" placeholder="9876">
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="text"
+                                                                                name="numeroDesignationArticleFacture"
+                                                                                class="form-control"
+                                                                                placeholder="Azure Interior, Colleen Diaz">
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="number" name="quantiteFacture"
+                                                                                class="form-control" placeholder="20">
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="text" name="eanFacture"
+                                                                                class="form-control"
+                                                                                placeholder="EAN1234567890">
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="number"
+                                                                                name="montantUnitaireArticleFacture"
+                                                                                class="form-control" step="0.01"
+                                                                                placeholder="10.00">
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="number" name="remiseFacture"
+                                                                                class="form-control" step="0.01"
+                                                                                placeholder="10">
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="number"
+                                                                                name="montantArticleFacture"
+                                                                                class="form-control"
+                                                                                placeholder="1000.00">
+                                                                        </td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+
+                                                            <button id="btnAjouteLigne">➕ Ajouter ligne</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </form>
+        </div>
+    </div>
+</div>
