@@ -11,7 +11,9 @@ fastapi==0.115.12
 h11==0.16.0
 idna==3.10
 isodate==0.7.2
+Jinja2==3.1.6
 lxml==5.4.0
+MarkupSafe==3.0.2
 mysql-connector==2.2.9
 platformdirs==4.3.7
 pycparser==2.22

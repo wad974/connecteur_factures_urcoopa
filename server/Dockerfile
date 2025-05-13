@@ -45,13 +45,11 @@ RUN ln -s /usr/share/zoneinfo/Indian/Reunion /etc/localtime
 # Copie du fichier Supervisord.conf
 #COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Configuration CRON
 COPY moncrontab /etc/cron.d/moncrontab
-
-RUN chmod 0644 /etc/cron.d/moncrontab
-
-RUN crontab /etc/cron.d/moncrontab
-
-RUN touch /var/log/cron.log
+RUN chmod 0644 /etc/cron.d/moncrontab && \
+    crontab /etc/cron.d/moncrontab && \
+    touch /var/log/cron.log
 
 # Exposition des ports
 EXPOSE 9898
@@ -59,7 +57,9 @@ EXPOSE 9898
 # Démarrer Supervisord pour gérer plusieurs processus
 #CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 # Lancer Uvicorn avec SSL
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9898", "--ssl-keyfile=server.key", "--ssl-certfile=server.crt"]
+# Lancement de Uvicorn + Cron via supervisord
+CMD service cron start && \
+    uvicorn main:app --host 0.0.0.0 --port 9898 --ssl-keyfile=server.key --ssl-certfile=server.crt
 
 # Commande de lancement (le script Python lance Uvicorn avec SSL)
 #CMD ["python3", "main.py"]
