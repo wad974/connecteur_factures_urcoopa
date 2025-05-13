@@ -1,3 +1,2 @@
-25 07 * * * curl http://0.0.0.0:45779/recup_ALL_ODOO_DIFF >/var/log/cronjma.txt
-05 22 * * 0 curl http://0.0.0.0:45779/recup_ALL_ODOO >/var/log/cronjma.txt
-02 02 * * * curl http://0.0.0.0:45779/Traite_IntegDiff_minimaxi >/var/log/cronjma.txt
+00 06 * * * curl http://0.0.0.0:9898/factures > /var/log/cronurcoopafactures.txt
+00 18 * * * curl http://0.0.0.0:9898/factures > /var/log/cronurcoopafactures.txt
