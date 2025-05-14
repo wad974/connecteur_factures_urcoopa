@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Form, HTTPException
 import zeep
 import json
 from fastapi import FastAPI, HTTPException, Security, Depends, Request
@@ -17,6 +17,8 @@ from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from sql.models import CRUD
 import mysql.connector
+import numpy as np
+import pandas as pd
 
 from datetime import datetime
 
@@ -149,6 +151,7 @@ async def getFactureAdherentUrcoopa( request : Request ):
         requete = '''
                 SELECT * FROM sic_urcoopa_facture
                 WHERE Type_Client = 'ADHERENT'
+                ORDER BY Nom_Client ASC
         '''
         cursorRequete.execute(requete,)
         
@@ -195,13 +198,14 @@ async def getFactureAdherentUrcoopa( request : Request ):
                 left join exportodoo.res_partner p
                 on f.Nom_Client = p.name
                 where Type_Client ='ADHERENT'
+                ORDER BY Nom_Client ASC
         '''
         cursorRequete.execute(query,)
         
         # on recupere la requete
         adherent_null = cursorRequete.fetchall()
         print('✅ récupération adherent_null ok !')
-
+        
         #on ferme la connexion
         cursorRequete.close()
         connexion.close()
@@ -210,27 +214,87 @@ async def getFactureAdherentUrcoopa( request : Request ):
         total_ht = sum(f["Montant_HT"] for f in datas)
         total_ttc = sum(f["Montant_TTC"] for f in datas)
         
+        #filtre somme client
+        df = pd.DataFrame(datas)
+        regroupe = df.groupby(['Code_Client', 'Nom_Client' ])[['Montant_HT', 'Montant_TTC']].sum().reset_index()
+        regroupé_dicts = regroupe.to_dict(orient='records')
+        
+        print(regroupé_dicts)
+        
+        
+        
         # affiche uniquement les adherent_nul
         facture_adherent_null = []
         for row in adherent_null:
             
             if row.get('id') == None:
                 facture_adherent_null.append(row)
-                        
+        
+        df = pd.DataFrame(facture_adherent_null)
+        regroupe_non_adherent = df.groupby(['Code_Client', 'Nom_Client' ])[['Montant_HT', 'Montant_TTC']].sum().reset_index()
+        regroupe_non_adherent = regroupe_non_adherent.to_dict(orient='records')
+        
+        print(regroupe_non_adherent)
+        
         return templates.TemplateResponse( 
                                         'factures.html', 
                                         { 
                                             'request' : request,
-                                            'factures' : datas ,
+                                            'factures' : regroupé_dicts ,
                                             "total_ht": total_ht,
                                             "total_ttc": total_ttc,
-                                            'adherent_null' : facture_adherent_null,
+                                            'adherent_null' : regroupe_non_adherent,
                                             "year": datetime.now().year
                                         })
     
     except mysql.connector.Error as erreur:
         print(f'Erreur lors de la connexion à la base de données : {erreur}')
         return {"Erreur connexion Base de données : {erreur}"}
+    
+    
+# POST BOUTONVALID
+
+@app.post("/valider-facture", response_class=HTMLResponse)
+async def valider_facture(
+    request: Request,
+    numero_facture: str = Form(...),
+    code_client: str = Form(...),
+    montant_ht: float = Form(...)
+):
+    
+    #connexion sql
+    print(' 🌐 init')
+    #connexion base de données
+    connexion = mysql.connector.connect(
+            host = '172.17.240.18',#host,
+            port='3306',
+            database= 'exportodoo', #dbname 
+            user='root', #user
+            password='S1c@l@1t'
+        )
+    print('🌐 connexion', connexion)
+    # on recupere le cursor en dictionnaire
+    cursorRequete = connexion.cursor(dictionary=True)
+    
+    requete = '''
+                update sic_urcoopa_facture
+                set Numero_Facture = '%s'
+                where Numero_Facture = '%s'
+        '''
+    new_numero_facture = 'val'+numero_facture
+    datas = (new_numero_facture, numero_facture)
+    cursorRequete.execute(requete,datas,)
+    connexion.commit()
+    # utiliser les données ici
+    print(f"Facture {numero_facture} validée pour le client {code_client} - ht : {montant_ht}€ - ttc : ")
+
+    # rediriger, stocker, ou afficher une page de confirmation
+    return templates.TemplateResponse("confirmation.html", {
+        "request": request,
+        "numero_facture": numero_facture,
+        "code_client": code_client,
+        "montant_ht": montant_ht
+    })
 
 os.system('service cron start')
 

@@ -17,6 +17,15 @@
             display: table-row-group ;
         }
 
+        #resultat{
+            display: none;
+            position: fixed;
+            background-color: rgba(0, 0, 0, 0.75);
+            top: 0; right: 0; left: 0; bottom: 0;
+            margin: auto;
+            z-index: 1111;
+        }
+
     </style>
 
 </head>
@@ -46,6 +55,7 @@
     </div>
 </div>
 
+
 <!-- Filtres type de document -->
 <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
     <div class="btn-group" role="group" aria-label="Filtrer par type de document">
@@ -60,6 +70,11 @@
 
     </div>
 </div>
+
+
+<!-- VALID-->
+<div id="resultat" class="mt-4"></div>
+
         
         <!-- TABLEAU -->
         <div class="table-responsive">
@@ -67,13 +82,16 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Action</th>
-                        <th>Facture</th>
+                        <th>Code Client</th>
+                        
+                        <!--
                         <th>Client</th>
                         <th>Date</th>
                         <th>Échéance</th>
                         <th>Produit</th>
                         <th>Quantité</th>
                         <th>PU €</th>
+                        -->
                         <th>Montant HT €</th>
                         <th>Montant TTC €</th>
                     </tr>
@@ -86,15 +104,18 @@
                     data-ttc="{{ facture.Montant_TTC }}"
                     >
                         <td>
-                            <button class="btn btn-sm btn-success">Valider</button>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Aucun</button>
+                            <!--
+                            <form class='form-valider'>
+                                <input type="hidden" name="numero_facture" value="{{ facture.Nom_Client }}">
+                                <input type="hidden" name="code_client" value="{{ facture.Code_Client }}">
+                                <input type="hidden" name="montant_ht" value="{{ facture.Montant_HT }}">
+                                <button type="submit" class="btn btn-success btn-sm">Valider</button>
+                            </form>
+                            -->
                         </td>
-                        <td>{{ facture.Numero_Facture }}</td>
+                        
                         <td>{{ facture.Nom_Client }}<br><small>Code Client : {{ facture.Code_Client }}</small></td>
-                        <td>{{ facture.Date_Facture }}</td>
-                        <td>{{ facture.Date_Echeance }}</td>
-                        <td>{{ facture.Libelle_Produit }}</td>
-                        <td>{{ facture.Quantite_Facturee }}</td>
-                        <td>{{ facture.Prix_Unitaire }}</td>
                         <td>{{ facture.Montant_HT }}</td>
                         <td>{{ facture.Montant_TTC }}</td>
                     </tr>
@@ -108,15 +129,24 @@
                     data-ttc="{{ facture.Montant_TTC }}"
                     >
                         <td>
-                            <button class="btn btn-sm btn-success">Valider</button>
+                            <form class='form-valider'>
+                                <input type="hidden" name="numero_facture" value="{{ facture.Nom_Client }}">
+                                <input type="hidden" name="code_client" value="{{ facture.Code_Client }}">
+                                <input type="hidden" name="montant_ht" value="{{ facture.Montant_HT }}">
+                                <input type="hidden" name="montant_ttc" value="{{ facture.Montant_TTC }}">
+                                <button type="submit" class="btn btn-success btn-sm">Valider</button>
+                            </form>
                         </td>
-                        <td>{{ facture.Numero_Facture }}</td>
+                        
                         <td>{{ facture.Nom_Client }}<br><small>Code Client : {{ facture.Code_Client }}</small></td>
+                    <!--
+                        <td>{{ facture.Numero_Facture }}</td>
                         <td>{{ facture.Date_Facture }}</td>
                         <td>{{ facture.Date_Echeance }}</td>
                         <td>{{ facture.Libelle_Produit }}</td>
                         <td>{{ facture.Quantite_Facturee }}</td>
                         <td>{{ facture.Prix_Unitaire }}</td>
+                    -->
                         <td>{{ facture.Montant_HT }}</td>
                         <td>{{ facture.Montant_TTC }}</td>
                     </tr>
@@ -129,13 +159,15 @@
                         <td>{{ '%.2f' % total_ttc }} €</td>
                     </tr>-->
                     <tr>
-                        <td colspan="8" class="text-end">Total affiché :</td>
+                        <td colspan="2" class="text-end">Total affiché :</td>
                         <td id="total-ht">0.00 €</td>
                         <td id="total-ttc">0.00 €</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
+
+        
     </main>
 
     <!-- Footer -->
@@ -161,7 +193,7 @@
                 const odoo = row.dataset.odoo;
                 const ht = parseFloat(row.dataset.ht);
                 const ttc = parseFloat(row.dataset.ttc);
-    
+
                 let visible = false;
     
                 if (selected === "ALL") {
@@ -210,6 +242,24 @@
             }
         }));
 
+        // bouton valdie
+        const boutonValide = document.querySelector('#boutonValide');
+
+        document.querySelectorAll(".form-valider").forEach(form => {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const response = await fetch("/valider-facture", {
+                method: "POST",
+                body: formData
+            });
+
+            const html = await response.text();
+            document.getElementById("resultat").style.display = 'block';
+            document.getElementById("resultat").innerHTML = html;
+        });
+    });
 
     </script>
     

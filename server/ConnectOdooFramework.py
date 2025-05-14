@@ -40,7 +40,7 @@ async def createOdoo(row):
             [[['name', '=', 'URCOOPA']]], 
             {'limit' : 1})
         
-        print('IDS_FOURNISSEUR -> ', ids_fournisseur[0])
+        print('✅ IDS_FOURNISSEUR -> ', ids_fournisseur[0])
         partner_id = ids_fournisseur[0]
         
         
@@ -53,7 +53,8 @@ async def createOdoo(row):
         'read', 
         [ids_fournisseur], 
         {'fields': ['name', 'country_id', 'comment']})
-        print('NAME_FOURNISSEUR -> ', name_fournisseur[0].get('name'))
+        
+        print('✅ NAME_FOURNISSEUR -> ', name_fournisseur[0].get('name'))
         partner_name = name_fournisseur[0].get('name')
         
         
