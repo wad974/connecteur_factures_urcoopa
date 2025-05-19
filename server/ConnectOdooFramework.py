@@ -4,9 +4,9 @@ async def createOdoo(row):
 
     # Paramètre
     # URL ODOO JCWAD
-    url = 'https://sdpmajdb-odoo17-dev-staging-sicalait-18269676.dev.odoo.com/'
+    url = 'https://sdpmajdb-odoo17-dev-staging-sicalait-20406522.dev.odoo.com/'
     #url = 'https://odoo.jcwad.re'
-    db = 'sdpmajdb-odoo17-dev-staging-sicalait-18269676'
+    db = 'sdpmajdb-odoo17-dev-staging-sicalait-20406522'
     #db = 'test_odoo_17'
     #username = 'woodartdeco974@gmail.com'
     #apiKey=788c811c79c24889b2214559c386e6fa2c0eebb9
@@ -20,7 +20,7 @@ async def createOdoo(row):
 
     # Check if authentication is successful
     if uid:
-        print("Authentification réussi. UID:", uid)
+        print("\n\n Authentification réussi. UID:", uid)
 
         # Get server version
         version = info.version()
@@ -61,7 +61,8 @@ async def createOdoo(row):
         # Recherche dans product.supplierinfo
         supplier_ids = models.execute_kw(
             db, uid, password,
-            'product.supplierinfo', 'search',
+            'product.supplierinfo', 
+            'search',
             [[
                 ['product_code', '=', row.get('Code_Produit')],
                 ['partner_id', '=', partner_id]
@@ -114,19 +115,53 @@ async def createOdoo(row):
         print('product.product search: -> ', product_ids)
         produit_id_final = product_ids[0]
         
-        product = models.execute_kw(
-            db, uid, password,
-            'product.product', 'read',
-            [product_ids],
-            {'fields': ['id', 'default_code']}
-        )[0]
-        print('product.product read avec name et id: -> ', product, '\n\n')
         
         if not product_ids:
             # si match produit retourne vide
             print("Produit Ids: vide -> Aucun ajout produit \n\n")
             return
         
+        # Lecture du produit (pour avoir l'ID)
+        product = models.execute_kw(
+            db, uid, password,
+            'product.product', 'read',
+            [product_ids],
+            {'fields': ['id', 'default_code']}
+        )[0]
+        product_id = product['id']
+        print('✔️ Produit lu:', product)
+        
+        # creation pour recuperer les produits des factures
+        invoice_lines = []
+        
+        # Si numéro de facture dans row correspond
+        if row.get('Numero_Facture') == row.get('Numero_Facture'):  # toujours vrai -> à corriger si besoin
+            print('✅ Numéro facture match, ajout produit_id:', product_id)
+            invoice_lines.append([0, 0, {
+                "product_id": product_id,
+                "quantity": row['Quantite_Facturee'],
+                "price_unit": row['Prix_Unitaire']
+            }])
+        else:
+            print("❌ Numéro facture ne correspond pas, aucun ajout de ligne.")
+            return
+        
+        
+            
+        # ajout suite produits dans json        
+        # Construction finale de la facture
+        sendAccountMove = {
+            "move_type": "in_invoice",
+            "partner_id": partner_id,
+            "invoice_partner_display_name": partner_name,
+            "name": row.get('Numero_Facture'),
+            "ref": row.get('Numero_Facture'),
+            "invoice_date": row.get('Date_Facture'),
+            "invoice_date_due": row.get('Date_Echeance'),
+            "invoice_line_ids": invoice_lines
+        }
+        
+        '''      
         #json retravailler pour odoo create odoo
         sendAccountMove = {
             "move_type": "in_invoice", # obligatoire pour facture fournisseur
@@ -153,64 +188,12 @@ async def createOdoo(row):
                 }]
             ]
         }
+        '''
+        # verification dans sendAccountMove
+        print('Produit dans Send.Account.Move:' , sendAccountMove)
+        
         
         '''
-        if not product_ids:
-            # si match produit retourne vide
-            print("Produit Ids: vide -> Aucun ajout produit \n\n")
-            return
-        
-        else:
-            invoice_lines = []
-            for produit in product_ids:
-                invoice_lines.append([0, 0, {
-                            "product_id": produit,
-                            "name": row.get('Libelle_Produit'),
-                            "quantity": row['Quantite_Facturee'],
-                            "price_unit": row['Prix_Unitaire']
-                        }])
-                
-                
-                if produit:
-                    
-                    product_exists = models.execute_kw(
-                    db,
-                    uid,
-                    password,
-                    'product.product',
-                    'search',
-                    [[['product_tmpl_id', '=', produit]]]
-                    )
-                    
-                    print('Retour produits_exits -> ', product_exists[0])
-                    
-                    if product_exists:
-                        print("Produit existe ! ID:", product_exists[0])
-                        # si produit vrai ajout produits dans invoice_line_ids
-                        print('Ajout produit ID: ', product_exists[0])
-                        
-                        invoice_lines.append([0, 0, {
-                            "product_id": product_exists[0],
-                            #"name": row.get('Libelle_Produit'),
-                            "quantity": row['Quantite_Facturee'],
-                            "price_unit": row['Prix_Unitaire']
-                        }])
-                        
-                    else:
-                        print("Produit ID introuvable ou archivé. \n\n")
-                        return
-                    
-                else:
-                    print("Produit individuel vide. \n\n")
-                    return
-                
-            # ajout suite produits dans json        
-            sendAccountMove["invoice_line_ids"] = invoice_lines        
-            
-            # verification dans sendAccountMove
-            print('Produit Account.Move:' , sendAccountMove)
-        '''
-        
         # Méthodes d'appel object
         models = xmlrpc.client.ServerProxy(f'{url}/xmlrpc/2/object')
         id = models.execute_kw(
@@ -238,7 +221,7 @@ async def createOdoo(row):
             'read', 
             [[id]],
             {'fields': ['name', 'ref']})
-        
+        '''
         '''
         #partner
         for value in partner:
@@ -247,8 +230,8 @@ async def createOdoo(row):
         '''
         
         
-        #print('models read. RESULTAT: ', partner)
-        print("Enregistrement effectué -> " , partner, ' \n\n\n')
+        #print('models read. RESULTAT: ',partner partner)
+        print("Enregistrement effectué -> TABLEAU SENDACCOUNTMOVE" ' \n\n\n')
         return
         
     else:

@@ -2,97 +2,169 @@ import requests
 import json
 import os
 from sql.connexion import recupere_connexion_db
+import time
 
-# URL de l'API JSON-RPC d'Odoo
-#url = 'https://sdpmajdb-odoo17-dev-staging-sicalait-18269676.dev.odoo.com/jsonrpc'
-# URL ODOO JCWAD
-url =  'https://odoo.jcwad.re/jsonrpc'
+import xmlrpc.client
 
-#efface la console
-clear = lambda: os.system('clear')
-clear()
-
-#json de test manuel 
-sendAccountMove = {
+async def createOdoo(rows: list):
+            
+    # Paramètres
+    url = 'https://sdpmajdb-odoo17-dev-staging-sicalait-20406522.dev.odoo.com/'
+    db = 'sdpmajdb-odoo17-dev-staging-sicalait-20406522'
+    username = 'info.sdpma@sicalait.fr'
+    password = 'nathalia974'
     
-    #"partner_id" : 826, #fournisseur
-    "partner_id" : 14, #fournisseur
-    "invoice_partner_display_name" : 'TEST API CREATION', #fournisseur
-    "name" : 'FACTSTAPI/NAME',
-    "ref" : "FACTESTAPI", # reference de la facture
-    "invoice_date" : "2025-04-25", # date de facturation format '%Y-%m-%d'
-    "date" : "2025-04-25" # date comptable format '%Y-%m-%d'
-}
-#json 
-sendAccountMoveLine = {
-    "product_id" : "[A566E5] code poule TEST", #produit
-    "name" : "TEST AJOUT PRODUITS PAR API", #produit
-    "quantity" : "10", #produit
-    "price_unit" : "300.00" #produit
-}
+    #efface la console
+    #clear = lambda: os.system('clear')
+    #clear()
+    
+    # Authentification
+    info = xmlrpc.client.ServerProxy(f'{url}/xmlrpc/2/common')
+    uid = info.authenticate(db, username, password, {})
 
-# Paramètres de l'appel JSON-RPC
-payload = {
-    "jsonrpc": "2.0",
-    "params": 
-    {
-        "service": "object",
-        "method": "execute_kw",
-        "args": [
-        #"sdpmajdb-odoo17-dev-staging-sicalait-18269676",  #Base
-        #143,                                              #code user odoo
-        #"c92bdb411b18a5f485236d902bcc0a8b3253f460",       #cle api du user
-        "test_odoo_17", #base TEST
-        2, #code user TEST
-        "da6df3e251cf139cacf1623605530cc5df07889f", # APY ODOO TEST PERSO
-        "account.move",                               #nom du model ( table ou vue)
-        "create",                                    #méthode 
-        [
-            sendAccountMove
-            #[]#vide
-            #[('company_id.id','=','19'),('product_tmpl_id.id','=','202259')]  #filtre
-            #[('company_id.id','=','3'),('location_id.id','=','42'),('warehouse_id.id','=','4'),('product_id.id','=','190265')]  #filtre
-            #[('sale_order_count','>',0)]
-            #[('move_type','=','entry')] #,('company_id','=','3')]
-            #[('id','=',603001)]
-        ],
-        {   #les options : Liste des champs dans fields, offset, limit, order
-            #, "employee_ids", "phone_sanitized", "phone_mobile_search", "fiscal_country_codes", "credit", "debit", "total_invoiced", "currency_id", "property_account_payable_id", "property_account_receivable_id", "ref_company_ids", "siret", "total_due", "total_overdue", "sum_franco", "qty_franco", "is_Freight_Forwarder", "import_incoterm_ids"
-            #'fields' : ["property_product_pricelist"]
-            #'fields' : ["type", "company_type","email_normalized", "name", "complete_name", "ref", "lang","comment", "category_id", "active", "employee", "function", "city", "state_id", "email", "phone", "mobile", "is_company", "is_public", "industry_id", "company_type", "company_id", "user_ids", "partner_share", "commercial_partner_id", "self", "display_name", "create_uid", "create_date", "write_uid", "write_date", "employee_ids", "phone_sanitized", "phone_mobile_search", "fiscal_country_codes", "credit", "debit", "total_invoiced", "currency_id", "property_account_payable_id", "property_account_receivable_id", "ref_company_ids", "siret", "total_due", "total_overdue", "sum_franco", "qty_franco", "is_Freight_Forwarder", "import_incoterm_ids"], 
-            #'fields' : ["sequence_prefix", "sequence_number", "name", "ref", "date", "state", "move_type", "journal_id", "company_id", "line_ids", "payment_id", "statement_line_id", "statement_id", "always_tax_exigible", "suitable_journal_ids", "type_name", "country_code", "attachment_ids", "invoice_line_ids", "invoice_date", "invoice_date_due", "delivery_date", "invoice_payment_term_id", "tax_calculation_rounding_method", "partner_id", "commercial_partner_id", "partner_shipping_id", "partner_bank_id", "fiscal_position_id", "payment_reference", "invoice_has_outstanding", "company_currency_id", "currency_id", "direction_sign", "amount_untaxed", "amount_tax", "amount_total", "amount_residual", "amount_untaxed_signed", "amount_tax_signed", "amount_total_signed", "amount_total_in_currency_signed", "amount_residual_signed", "payment_state", "reversed_entry_id", "reversal_move_id", "invoice_vendor_bill_id", "invoice_partner_display_name", "narration", "is_move_sent", "is_being_sent", "invoice_user_id", "user_id", "invoice_origin", "invoice_incoterm_id", "incoterm_location", "invoice_pdf_report_id", "invoice_filter_type_domain", "bank_partner_id", "tax_country_id", "tax_country_code", "has_reconciled_entries", "partner_credit", "display_name", "create_uid", "create_date", "write_uid", "write_date", "payment_ids", "statement_line_ids", "deferred_move_ids", "deferred_original_move_ids", "deferred_entry_type", "extract_state", "extract_status", "amount_paid", "amount_ecotaxe", "purchase_vendor_bill_id", "purchase_id", "purchase_order_count", "stock_move_id", "pos_order_ids", "pos_payment_ids", "pos_refunded_invoice_ids", "team_id", "asset_id", "asset_remaining_value", "asset_depreciated_value", "asset_number_days", "asset_depreciation_beginning_date", "depreciation_value", "asset_ids", "asset_id_display_name", "count_asset", "draft_asset_exists", "landed_costs_ids", "purchase_order_id", "import_cost_line_id", "import_custom_duties_id"] , 
-            #'fields': ["id","model", "name", "modules"], #juste les colonnes qu'on a besoin
-            #'limit' : 10,
-            #'order' : 'detailed_type, list_price asc'
+    if not uid:
+        print("❌ Échec de l'authentification.")
+        return
 
-        }
-        ],
-        "context": {}
+    print(f"✅ Authentification réussie. UID: {uid}")
+    models = xmlrpc.client.ServerProxy(f'{url}/xmlrpc/2/object')
+
+    # Récupération du fournisseur URCOOPA
+    ids_fournisseur = models.execute_kw(
+        db, uid, password,
+        'res.partner', 'search',
+        [[['name', '=', 'URCOOPA']]],
+        {'limit': 1}
+    )
+
+    if not ids_fournisseur:
+        print("❌ Fournisseur 'URCOOPA' non trouvé.")
+        return
+    # Id fournisseur 
+    print(f"✅ Ids fournisseur -> Odoo  : {ids_fournisseur}")
+    partner_id = ids_fournisseur[0]
+
+    name_fournisseur = models.execute_kw(
+        db, uid, password,
+        'res.partner', 'read',
+        [ids_fournisseur],
+        {'fields': ['name']}
+    )[0]['name']
+    # Id fournisseur 
+    print(f"✅ Name fournisseur -> Odoo : {name_fournisseur}")
+    
+    
+    # Infos communes à toute la facture
+    #Contenu de row avant traitement pour Odoo
+    import json
+    #print(f"✅ Contenu de Rows avant injection. Rows: {json.dumps(rows, indent=2)}")
+    numero_facture = rows[0]['Numero_Facture']
+    invoice_date = rows[0]['Date_Facture']
+    invoice_date_due = rows[0]['Date_Echeance']
+
+    invoice_lines = []
+
+    # Récupération des lignes produits
+    for row in rows:
+        
+        #code produit
+        print(f'✅ Code produit récupérer dans Rows->Facture : {row.get('Code_Produit')}')
+        code_produit = row.get('Code_Produit')
+        
+        time.sleep(0.3)  # ralentis de 1000ms
+        supplier_ids = models.execute_kw(
+            db, uid, password,
+            'product.supplierinfo', 'search',
+            [[
+                ['product_code', '=', code_produit],
+                ['partner_id', '=', partner_id]
+            ]],
+            {'limit': 1}
+        )
+        #supplier_ids récupérer
+        print(f'✅ Supplier_ids récupérer dans Odoo : {supplier_ids}')
+
+        if not supplier_ids:
+            print(f"❌ Produit {code_produit} non trouvé dans supplierinfo.")
+            continue
+        
+        time.sleep(0.3)  # ralentis de 1000ms
+        #supplier_data
+        supplier_data = models.execute_kw(
+            db, uid, password,
+            'product.supplierinfo', 'read',
+            [supplier_ids],
+            {'fields': ['product_tmpl_id']}
+        )[0]
+
+        #supplier _data récuperer
+        print(f'✅ Supplier_data récupéré -> Odoo : {supplier_data}')
+
+        #product tmpl id recupéré uniquement
+        product_tmpl = supplier_data.get('product_tmpl_id')
+
+        #Si product tmpl est False on arrete la boucle et on continue sur l'autre produit
+        if not product_tmpl or product_tmpl[0] is False:
+            print(f"❌ Produit code dans Facture -> Rows {code_produit} non trouvé dans supplierinfo.")
+            continue
+        
+        tmpl_id = supplier_data['product_tmpl_id'][0]
+
+        time.sleep(0.3)  # ralentis de 1000ms
+        product_ids = models.execute_kw(
+            db, uid, password,
+            'product.product', 'search',
+            [[['product_tmpl_id', '=', tmpl_id]]],
+            {'limit': 1}
+        )
+        #supplier_ids récupérer
+        print(f'✅ Product_ids récupérer -> Odoo  : {product_ids}')
+
+        if not product_ids:
+            print(f"❌ Aucun produit trouvé pour le template {tmpl_id}")
+            continue
+
+        product_id = product_ids[0]
+        print(f"✅ Produit trouvé pour {code_produit} ➔ ID {product_id} \n\n")
+
+        invoice_lines.append([0, 0, {
+            'product_id': product_id,
+            'quantity': row['Quantite_Facturee'],
+            'price_unit': row['Prix_Unitaire']
+        }])
+
+    if not invoice_lines:
+        print("❌ Aucune ligne de produit valide à créer. Annulation.")
+        return
+
+    # Construction de la facture
+    sendAccountMove = {
+        "move_type": "in_invoice",
+        "partner_id": partner_id,
+        "invoice_partner_display_name": name_fournisseur,
+        "name": numero_facture,
+        "ref": numero_facture,
+        "invoice_date": invoice_date,
+        "invoice_date_due": invoice_date_due,
+        "invoice_line_ids": invoice_lines
     }
-}
 
-# En-têtes de la requête
-headers = {'Content-Type': 'application/json'}
+    # Debug JSON
+    #import json
+    print("📦 Facture à envoyer à Odoo :")
+    print(json.dumps(sendAccountMove, indent=2))
 
-# Envoi de la requête POST
-response = requests.post(url, data=json.dumps(payload), headers=headers)
-
-#efface la console
-clear = lambda: os.system('clear')
-clear()
-
-# Traitement de la réponse
-if response.status_code == 200:
-    result = response.json()
-    print( 'resultat create : ', result)
-    if "result" in result:
-        records = result["result"]
-        print(' type : ', type(records))
-        print(f"{records}")
+    # Envoi
+    try:
         
+        move_id = models.execute_kw(
+            db, uid, password,
+            'account.move', 'create',
+            [sendAccountMove]
+        )
         
-    if 'error' in result:
-        print(result['error'])
-        print(result['error'].get('message'))
-else:
-    print(f"Erreur HTTP {response.status_code}: {response.text}")
+        print(f"✅ Facture Odoo créée avec ID {move_id} \n\n")
+    except xmlrpc.client.Fault as e:
+        #Retourne tous les erreur odoo
+        #Erreur odoo si facture existe sera retrouné
+        print(f"❌ Erreur Odoo : {e.faultString} \n\n")

@@ -23,6 +23,7 @@ import pandas as pd
 from datetime import datetime
 
 from ConnectOdooFramework import createOdoo
+from createOdoo import createOdoo
 
 
 # Chargement des variables d'environnement
@@ -83,6 +84,7 @@ async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = 30):
         crud = CRUD()
         
         Adherent = []
+        Urcoopa = []
         
         for row in factures:
             
@@ -106,19 +108,43 @@ async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = 30):
                     #await crud.update(row)
                 else:
                 '''         
-                
-            print(f"Facture {numero_facture} déjà creer BDD ➔ Injection ODOO")
             
-            #Filtres Adherent  / Magasin
-            if row.get('Type_Client') != 'ADHERENT':
-                #create dans facture odoo
-                #await createOdoo(row)
-                print('ajout odoo')
-            else: 
-                #create facture dans petit module odoo comptaAdherent
-                Adherent.append(row)
+            
+            print(f"Facture {numero_facture} déjà creer BDD ➔ Injection ODOO")
+            Urcoopa.append(row)
+            print('✅ AJOUT DANS TABLEAU URCOOPA \n\n')
+            
+            
+        if Urcoopa:
+            from collections import defaultdict
+
+            factures_groupées = defaultdict(list)
+
+            for row in Urcoopa:
+                factures_groupées[row["Numero_Facture"]].append(row)
+
+            for numero_facture, lignes in factures_groupées.items():
+                # On filtre : ne traiter que les lignes NON ADHERENT
+                lignes_filtrées = [row for row in lignes if row.get("Type_Client") != "ADHERENT"]
+
+                if lignes_filtrées:
+                    # Appel unique à createOdoo avec toutes les lignes de cette facture
+                    await createOdoo(lignes_filtrées)
         
-        return JSONResponse(content=Adherent, status_code=200 )       
+        '''  
+        #Filtres Adherent  / Magasin
+        if row.get('Type_Client') != 'ADHERENT':
+            #create dans facture odoo
+            result = await createOdoo(row)
+            
+            
+        else: 
+            #create facture dans petit module odoo comptaAdherent
+            Adherent.append(row)
+        ''' 
+        
+        
+        return JSONResponse(content=Urcoopa, status_code=200 )       
         #return {"Messages": 'Récuperation factures urcoopa Ok !'}
     
     except json.JSONDecodeError:
@@ -296,7 +322,7 @@ async def valider_facture(
         "montant_ht": montant_ht
     })
 
-os.system('service cron start')
+#os.system('service cron start')
 
 if __name__ == "__main__":
     import uvicorn
