@@ -73,6 +73,8 @@ def home(request : Request):
 @app.get("/factures/")
 async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = 30):
     try:
+        print("🟢 INIT : Démarrage du service get_factures...")
+        
         response = client.service.Get_Factures_Sicalait(xCleAPI=xCleAPI, NbJours=nb_jours)
         
         if not response:
@@ -262,6 +264,9 @@ async def getFactureAdherentUrcoopa( request : Request ):
         
         print(regroupe_non_adherent)
         
+        return JSONResponse(content=regroupé_dicts)
+        
+        '''
         return templates.TemplateResponse( 
                                         'factures.html', 
                                         { 
@@ -272,7 +277,8 @@ async def getFactureAdherentUrcoopa( request : Request ):
                                             'adherent_null' : regroupe_non_adherent,
                                             "year": datetime.now().year
                                         })
-    
+        '''
+        
     except mysql.connector.Error as erreur:
         print(f'Erreur lors de la connexion à la base de données : {erreur}')
         return {"Erreur connexion Base de données : {erreur}"}
@@ -322,14 +328,39 @@ async def valider_facture(
         "montant_ht": montant_ht
     })
 
-#os.system('service cron start')
+from crontab import CronTab
+def init_cron():
+    # Récupération de la planification via variable d'environnement
+    #cron_schedule = os.getenv('CRONTAB_APP', '30 14 * * *')
+    cron_schedule = os.getenv('CRONTAB_APP')
+
+    # Initialisation du cron pour l'utilisateur root
+    #cron = CronTab(user='root')
+    cron = CronTab(user='root')
+    cron.remove_all()
+    cron.write()
+
+    # Définition de la commande
+    job = cron.new(command='curl http://0.0.0.0:9898/factures/?xCleAPI=f1f3b6d5-113e-4cd1-943d-0f07d28000df&nb_jours=30')
+    job.setall(cron_schedule)
+    cron.write()
+
+    # Lancement du service cron
+    print(f"✅ CRON configuré avec la planification : {cron_schedule}")
+    print("✅ Démarrage du service CRON...")
+    os.system('service cron start')
+    print("✅ Service CRON lancé avec succès.")
+
+init_cron()
 
 if __name__ == "__main__":
+    
+    
     import uvicorn
     uvicorn.run(
         app, 
         host="0.0.0.0", 
         port=9898,
-        ssl_certfile="server.crt",
-        ssl_keyfile="server.key"
+        #ssl_certfile="server.crt",
+        #ssl_keyfile="server.key"
         )

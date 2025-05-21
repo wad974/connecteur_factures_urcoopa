@@ -68,10 +68,10 @@ async def createOdoo(rows: list):
     for row in rows:
         
         #code produit
-        print(f'✅ Code produit récupérer dans Rows->Facture : {row.get('Code_Produit')}')
+        print(f"✅ Code produit récupérer dans Rows->Facture : {row.get('Code_Produit')}")
         code_produit = row.get('Code_Produit')
         
-        time.sleep(0.3)  # ralentis de 1000ms
+        time.sleep(1)  # ralentis de 1000ms
         supplier_ids = models.execute_kw(
             db, uid, password,
             'product.supplierinfo', 'search',
@@ -88,7 +88,7 @@ async def createOdoo(rows: list):
             print(f"❌ Produit {code_produit} non trouvé dans supplierinfo.")
             continue
         
-        time.sleep(0.3)  # ralentis de 1000ms
+        time.sleep(1)  # ralentis de 1000ms
         #supplier_data
         supplier_data = models.execute_kw(
             db, uid, password,
@@ -110,7 +110,7 @@ async def createOdoo(rows: list):
         
         tmpl_id = supplier_data['product_tmpl_id'][0]
 
-        time.sleep(0.3)  # ralentis de 1000ms
+        time.sleep(1)  # ralentis de 1000ms
         product_ids = models.execute_kw(
             db, uid, password,
             'product.product', 'search',

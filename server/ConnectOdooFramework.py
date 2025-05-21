@@ -75,7 +75,6 @@ async def createOdoo(row):
             return
         
         
-        
         #on match les produis 
         # 2. on recherche les produits dans odoo qui match avec Code_Produit urcoopa
         models = xmlrpc.client.ServerProxy(f'{url}/xmlrpc/2/object')

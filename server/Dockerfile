@@ -59,7 +59,8 @@ EXPOSE 9898
 # Lancer Uvicorn avec SSL
 # Lancement de Uvicorn + Cron via supervisord
 CMD service cron start && \
-    uvicorn main:app --host 0.0.0.0 --port 9898 --ssl-keyfile=server.key --ssl-certfile=server.crt
+    uvicorn main:app --host 0.0.0.0 --port 9898
+    #uvicorn main:app --host 0.0.0.0 --port 9898 --ssl-keyfile=server.key --ssl-certfile=server.crt
 
 # Commande de lancement (le script Python lance Uvicorn avec SSL)
 #CMD ["python3", "main.py"]
