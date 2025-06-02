@@ -30,9 +30,17 @@ async function loadingPage(statut) {
             // ajout container
             document.body.appendChild(container);
 
-            } else 
+            }
+
+            if ( statut == false )
             {
                 // retire container
+                let wrapper = document.getElementById('print-loadingPage-container');
+
+                console.log( 'ICI WRAPPER' , wrapper);
+                
+                wrapper.style.display = 'none';
+                document.body.removeAttribute(wrapper);
                 document.body.removeChild(container);
             }
 

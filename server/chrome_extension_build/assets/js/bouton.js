@@ -14,6 +14,7 @@ function injectScriptsHtmlFactureUrcoopaAdherent() {
         .then(response => response.text())
         .then(html => {
             // loading fin
+            console.log('LOADING PAGE = FALSE');
             loadingPage(false);
             // Création d'un conteneur div pour template html facture            
             container = document.createElement("div");
@@ -77,7 +78,7 @@ function injectScriptsHtmlFactureUrcoopaAdherent() {
 
             xhrButton.addEventListener("click", () => {
                 log.textContent = "";
-                let url = "https://0.0.0.0:9898/factureAdherentUrcoopa";
+                let url = "https://172.17.240.18:9898/factureAdherentUrcoopa";
 
                 const xhr = new XMLHttpRequest();
                 xhr.open("GET", url);
@@ -123,14 +124,15 @@ function initPOSFactureUrcoopaAdherent() {
             aDivBox.setAttribute('class', 'dropdown-item o_nav_entry facture-urcoopa-adherent-button');
             aDivBox.setAttribute('role', 'menuitem');
             aDivBox.setAttribute('tabindex', '1');
-            aDivBox.setAttribute('href', '#');
+            aDivBox.setAttribute('href', 'http://172.17.240.18:9898/');
             aDivBox.setAttribute('data-hotkey', '2');
             aDivBox.setAttribute('aria-selected', 'false');
             aDivBox.setAttribute('data-section', '119');
             aDivBox.setAttribute('data-menu-xmlid', 'account.menu_action_out_move_urcoopa_adherent');
             aDivBox.innerHTML = 'Adherent-Urcoopa';
             aDivBox.style.cursor = 'pointer';
-
+            
+            /**
             aDivBox.addEventListener('click', function (e) {
 
                 e.preventDefault();
@@ -139,11 +141,16 @@ function initPOSFactureUrcoopaAdherent() {
                 console.clear();
 
                 // loading debut
+                console.log('LOADING PAGE = TRUE');
                 loadingPage(true);
 
-                injectScriptsHtmlFactureUrcoopaAdherent();
+                //injectScriptsHtmlFactureUrcoopaAdherent();
+
+                console.log('LOADING PAGE = FALSE MAYBE');
+                loadingPage(false);
 
             });
+             */
 
             console.log('✅ Bouton Facture-Adherent-Urcoopa créé');
             return aDivBox;
@@ -234,11 +241,12 @@ function initPOSFactureUrcoopaAdherent() {
 }
 
 // INIT BOUTON ECOUTE BOUTON COMPTA
-
 console.log("🌐 Init recherche bouton comptabilité déclenché");
 
 const observer = new MutationObserver((mutations, obs) => {
     const boutonCompta = document.querySelector("a[data-menu-xmlid='account_accountant.menu_accounting']");
+    const DivCompta = document.querySelector("a[data-menu-xmlid='account.menu_board_journal_1']");
+
 
     if (boutonCompta) {
         console.log("✅ Bouton comptabilité détecté");
@@ -253,6 +261,16 @@ const observer = new MutationObserver((mutations, obs) => {
         }, { once: true });
 
         obs.disconnect(); // on arrête l'observation une fois trouvé
+    }
+
+    if (DivCompta) {
+        console.clear();
+        console.log("✅ Zone comptabilité détecté");
+
+        // Démarrer l'extension
+            setTimeout(() => {
+                initPOSFactureUrcoopaAdherent();
+            }, 0);
     }
 });
 
