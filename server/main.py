@@ -217,9 +217,9 @@ def home(request : Request):
     '''
 ### FACTURES
 @app.get("/factures/")
-async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = 30):
+async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = API_KEY_JOUR):
     try:
-        print("🟢 INIT : Démarrage du service get_factures...")
+        print("🌐 INIT : Démarrage du service get_factures...")
         
         response = client.service.Get_Factures_Sicalait(xCleAPI=xCleAPI, NbJours=nb_jours)
         
@@ -333,108 +333,212 @@ async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = 30):
 async def envoyer_commande():
 
     try:
-        last_id = models.execute_kw(
+        
+        
+        print('[INFO] 🌐 init commande')
+    
+        commandes = models.execute_kw(
             db, uid, password,
-            'purchase.order', 'search',
-            [[]],  # pas de filtre, a nou vé toute
+            'purchase.order',
+            #'search',
+            'search_read',
+            #'search_count',
+            [[]],
             {
-                'limit': 1,
-                'order': 'id desc'  # trie du plus grand ID au plus petit
+                #'limit' : 10,
+                'order': 'id asc'
             }
-        )[0]
-
-        print("🆔 Dernier ID créé dans purchase.order :", last_id)
+        )
         
-        # ---------------------
-        # 1. 📦 Récupérer la commande Odoo
-        # ---------------------
-        print('[INFO] 1. 📦 Récupérer la commande Odoo')
-        commande = models.execute_kw(
-            db, uid, password,
-            'purchase.order', 'read', [[last_id]],
-            {'fields': ['name', 'partner_id', 'date_order', 'order_line']}
-        )[0]
-        print('[INFO] 📦 Récupérer la commande Odoo', json.dumps(commande, indent=2))
-        
-        if commande['partner_id'][1] == 'URCOOPA':
+        #filtres 
+        for commande in commandes:
+            #print(commande.get('partner_id'), commande.get('state'))
+            partner_urcoopa = commande.get('partner_id')
             
-            print('[INFO] 2. 📦 Récupérer le partner Odoo')
-            partner = models.execute_kw(
-                db, uid, password,
-                'res.partner', 'read',
-                [[commande['partner_id'][0]]],
-                {'fields': ['name']}
-            )[0]
-            print('[INFO] 📦 Récupérer le partner Odoo', partner)
-            
-            shipping = models.execute_kw(db, uid, password,
-                'res.partner', 'read', [[commande['partner_id'][0]]],
-                {'fields': ['name']}
-            )[0]
-            
-            print('shipping ', shipping )
-
-            lignes = models.execute_kw(
-                db, uid, password,
-                'purchase.order.line', 'read',
-                [commande['order_line']],
-                {'fields': ['product_id', 'name', 'product_qty']}
-            )
-            
-            print('lignes  : ', json.dumps(lignes, indent=2) )
-            
-
-            # ---------------------
-            # 2. 🏗️ Construire le JSON à envoyer
-            # ---------------------
-            ligne_commande = []
-            for i, ligne in enumerate(lignes):
-                product = ligne['product_id'][1]
+            if partner_urcoopa[1] != 'URCOOPA':
+                print('[FAULT] ❌ FAUSSE ALERTE - NON URCOOPA ', partner_urcoopa , '\n')
+                continue
                 
-                #extrait code
-                code_produit = ligne['name'].split("]")[0].replace("[", "")
-                print("Code extrait :", code_produit)
-                            
-                ligne_commande.append({
-                    "Numero_ligne": i + 1,
-                    "Code_Produit": code_produit,  # par exemple : '11522G25AA'
-                    "Libelle_Produit": ligne['name'],
-                    "Poids_Commande": ligne['product_qty']
-                })
-
-            print('ligne commandes : ', ligne_commande)
-            commande_json = {
-                "Commande": [
+            print('[SUCCESS] ✅  BINGO URCOOPA')
+            
+            # ---------------------
+            # 1. 📦 Récupérer la commande Odoo
+            # ---------------------
+            print('[INFO] 1. 📦 Récupération de la commande Odoo')
+            commande_id = models.execute_kw(
+                db, uid, password,
+                'purchase.order', 'read',
+                [[commande.get('id')]],  # filtre, sur le id de la commande
+                {
+                    'fields' : ['name', 'partner_id', 'company_id', 'date_order', 'order_line', 'state']
+                    #'limit': 1,
+                    #'order': 'id desc'  # trie du plus grand ID au plus petit
+                }
+            )[0]
+            #print("[INFO] 🆔 Dernier ID créé dans purchase.order :", commande_id)
+            
+            #FILTRES : commandes urcoopa uniquement
+            #FILTRES : status : draft 
+            if commande['partner_id'][1] == 'URCOOPA' and commande.get('state') == 'purchase':
+                
+                print('[INFO] 2. 📦 Récupérer le partner Odoo')
+                partner = models.execute_kw(
+                    db, uid, password,
+                    'res.partner', 'read',
+                    [[commande['partner_id'][0]]],
+                    {'fields': ['name']}
+                )[0]
+                print('[SUCCESS] ✅ Partner Odoo récupéré : ', partner)
+                
+                #recuperation info : login mail societe
+                print('COMMANDE : ', commande['user_id'])
+                info_user = models.execute_kw(
+                    db, uid, password,
+                    #'purchase.order.line', 'search_read',
+                    'res.users', 'search_read',
+                    [[[ 'id', '=', commande['user_id'][0] ]]],  # pas de filtre, on veut tout
                     {
-                        "Societe": "UR",
-                        "Code_Client": "5024",
-                        "Numero_Commande": commande["name"],
-                        "Nom_Client": partner["name"],
-                        "Code_Adresse_Livraison": "01", 
-                        "Commentaire": "Commande issue d’Odoo",
-                        "Date_Livraison_Souhaitee": commande["date_order"].replace("-", ""),  # Format YYYYMMDD
-                        "Num_Telephone": partner.get("phone", ""),
-                        "Email": partner.get("email", ""),
-                        "Ligne_Commande": ligne_commande
+                        #'limit': 10,
+                        #'order': 'id asc' , # trie du plus grand ID au plus petit
+                        'fields' : ['name', 'email', 'phone', 'company_id']
                     }
-                ]
-            }
+                )[0]
+                print('[SUCCESS] ✅ info_user Odoo récupéré : ', info_user)
+                
+                shipping = models.execute_kw(db, uid, password,
+                    'res.partner', 'read', [[commande['partner_id'][0]]],
+                    {'fields': ['name']}
+                )[0]
+                
+                print('[SUCCESS] ✅ shipping Odoo récupéré', shipping )
 
-            print("✅ Commande construite :", json.dumps(commande_json, indent=2))
-            # ---------------------
-            # 3. 📤 Envoi via SOAP
-            # ---------------------
-            response = client.service.Push_Commandes_Sicalait(
-                xCleAPI=API_KEY_URCOOPA,
-                jCommande=json.dumps(commande_json)
-            )
+                # Récupérer les lignes de la commande
+                products = models.execute_kw(
+                    db, uid, password,
+                    'purchase.order.line', 'read',
+                    [commande['order_line']],
+                    {'fields': ['product_id', 'name', 'product_qty']}
+                )
+                print('[INFO] 📦 Voici les produits  : ', json.dumps(products, indent=2))
 
-            print("🟢 Réponse Urcoopa :", response)
-            return JSONResponse(content={"status": "OK", "response": response})
-        else : 
-            print("🟢 Réponse commande non - urcoopa ")
-            return JSONResponse(content={"status": "DONE", 'partner_id': commande['partner_id'][1]})
-        
+                commentaire = ''
+                # ---------------------
+                # 2. 🏗️ Construire le JSON à envoyer
+                # ---------------------
+                ligne_commande = []
+                for i, ligne in enumerate(products):
+                                        
+                    #conditions pour recupéré products s'il y a commentaire
+                    if not ligne['product_id']:
+                        commentaire += f" - {ligne['name']} ;"
+                        print('-> commentaire : ', commentaire)
+                        continue
+                    
+                    product_id = ligne['product_id'][0]
+                    print('-> product_id récupéré: ', product_id)
+                    
+                    # Récupérer le product_tmpl_id
+                    product_product = models.execute_kw(
+                        db, uid, password,
+                        'product.product', 'read',
+                        [[product_id]],
+                        {'fields': ['product_tmpl_id']}
+                    )[0]
+                    product_tmpl_id = product_product['product_tmpl_id'][0]
+                    print('-> product_tmpl_id récupéré: ', product_tmpl_id)
+                    
+                    # Chercher les ids supplierinfo
+                    supplierinfo_ids = models.execute_kw(
+                        db, uid, password,
+                        'product.supplierinfo', 'search',
+                        [[['product_tmpl_id', '=', product_tmpl_id]]]
+                    )
+                    print('-> supplierinfo_ids récupéré: ', supplierinfo_ids)
+                    
+                    
+                    # Lire les infos
+                    product_code = 'N/A'
+                    if supplierinfo_ids:
+                        supplierinfo_data = models.execute_kw(
+                            db, uid, password,
+                            'product.supplierinfo', 'read',
+                            [supplierinfo_ids],
+                            {'fields': ['product_code']}
+                        )
+                        if supplierinfo_data and supplierinfo_data[0].get('product_code'):
+                            product_code = supplierinfo_data[0]['product_code']
+                            
+                    print('[INFO] Code fournisseur récupéré :', product_code)
+                    
+                    
+                    
+                    # Extrait code interne si besoin (crochets)
+                    code_interne = ligne['name'].split("]")[0].replace("[", "")
+                    
+                    ligne_commande.append({
+                        "Numero_ligne": i + 1,
+                        "Code_Produit": product_code,
+                        "Libelle_Produit": ligne['name'],
+                        "Poids_Commande": ligne['product_qty']
+                    })
+
+                #print('[INFO] 📦 Commandes final : ', json.dumps(ligne_commande, indent=2))
+                commande_json = {
+                    "Commande": [
+                        {
+                            "Societe": "UR",
+                            #"Societe": "SI",
+                            #"Societe": commande['company_id'][1],
+                            "Code_Client": "5024",
+                            "Numero_Commande": commande["name"],
+                            "Nom_Client": commande["picking_type_id"][1],
+                            "Code_Adresse_Livraison": "01",
+                            "Commentaire": commentaire,
+                            "Date_Livraison_Souhaitee": commande["date_order"].replace("-", "")[:8],
+                            "Num_Telephone": info_user.get("phone", ""),
+                            "Email": info_user.get("email", ""),
+                            "Ligne_Commande": ligne_commande
+                        }
+                    ]
+                }
+
+                print("✅ Commande construite :", json.dumps(commande_json, indent=2))
+                # ---------------------
+                # 3. 📤 Envoi via SOAP
+                # ---------------------
+                
+                commande_json_str = json.dumps(commande_json)
+                jCommande_type = xsd.Element(
+                    '{urn:WS_Sicalait}jCommande',
+                    xsd.String()
+                )
+                jCommande_value = jCommande_type(commande_json_str)
+                
+                response = client.service.Push_Commandes_Sicalait(
+                    xCleAPI=API_KEY_URCOOPA,
+                    jCommande=jCommande_value
+                )
+
+                print("[INFO] Réponse Urcoopa :", response)
+                
+                #on décortique pour vérifier qu'il y a erreur ou pas
+                response = response.split()
+                
+                if response[0] == 'ERREUR':
+                    print("[ERREUR] ❌ Réponse Urcoopa \n\n")
+                    continue
+                    #return JSONResponse(content={"status": "DONE", "response": response})
+                else :
+                    print('✅[INFO] COMMANDE ENVOYER')
+                    continue
+                    ###
+                    ###FILTRES A METTRE EN PLACE POUR COMMANDE DEJA ENVOYER SI NECESSAIRE
+                    ###
+                    ###
+                    #return JSONResponse(content={"status": "OK", "response": response})
+            else : 
+                print('[FAULT] ❌ ZUT COMMANDE TOUJOURS EN BROUILLON \n')    
+            
     except Fault as soap_err:
         print("❌ Erreur SOAP :", soap_err)
         raise HTTPException(status_code=500, detail=str(soap_err))
@@ -617,7 +721,8 @@ from crontab import CronTab
 def init_cron():
     # Récupération de la planification via variable d'environnement
     #cron_schedule = os.getenv('CRONTAB_APP', '30 14 * * *')
-    cron_schedule = os.getenv('CRONTAB_APP')
+    cron_schedule = os.getenv('CRONTAB_APP_FACTURES')
+    cron_schedule2 = os.getenv('CRONTAB_APP_COMMANDES')
 
     # Initialisation du cron pour l'utilisateur root
     #cron = CronTab(user='root')
@@ -627,11 +732,15 @@ def init_cron():
 
     # Définition de la commande
     job = cron.new(command=f'curl http://0.0.0.0:9898/factures/?xCleAPI={API_KEY_URCOOPA}&nb_jours={API_KEY_JOUR}')
+    job2 = cron.new(command=f'curl -X POST http://0.0.0.0:9898/envoyer-commande/')
     job.setall(cron_schedule)
+    job2.setall(cron_schedule2)
     cron.write()
 
     # Lancement du service cron
-    print(f"✅ CRON configuré avec la planification : {cron_schedule}")
+    #print(f"✅ CRON configuré avec la planification : {cron_schedule1} et {cron_schedule2}")
+    print(f"✅ CRON configuré avec la planification factures: {cron_schedule} ")
+    print(f"✅ CRON configuré avec la planification commandes: {cron_schedule2} ")
     print("✅ Démarrage du service CRON...")
     os.system('service cron start')
     print("✅ Service CRON lancé avec succès.")
