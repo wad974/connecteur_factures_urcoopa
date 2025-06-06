@@ -10,7 +10,7 @@ import xmlrpc.client
 
 
 
-async def createOdoo(rows: list, models, db, uid, password):
+async def createOdooGesica(rows: list, models, db, uid, password):
     
     #efface la console
     #clear = lambda: os.system('clear')
@@ -49,26 +49,30 @@ async def createOdoo(rows: list, models, db, uid, password):
             #Contenu de row avant traitement pour Odoo
             import json
             #print(f"✅ Contenu de Rows avant injection. Rows: {json.dumps(rows, indent=2)}")
-            numero_facture = f"URCOOPA/{str(datetime.datetime.now().strftime('%Y/%m'))}/{str(rows[0]['Numero_Facture'])}"
-            ref_facture = rows[0]['Numero_Facture']
-            invoice_date = rows[0]['Date_Facture']
-            invoice_date_due = rows[0]['Date_Echeance']
+            numero_facture = f"GESICA/{str(datetime.datetime.now().strftime('%Y/%m'))}/{str(rows[0]['ENOCOM'])}"
+            ref_facture = rows[0]['ENOCOM']
+            invoice_date = rows[0]['EDATCD']
+            invoice_date_due = rows[0]['EDATCF']
 
             invoice_lines = []
-
+            
+            #print(f'{rows}')
+            
             # Récupération des lignes produits
             for row in rows:
+                #print(f'{row}')
+                
                 
                 #code produit
-                print(f"🔍 [INFO] Recherche produit à {datetime.datetime.now().strftime('%H:%M:%S')} : {row.get('Code_Produit')}")
-                code_produit = row.get('Code_Produit')
+                print(f"🔍 [INFO] Recherche produit à {datetime.datetime.now().strftime('%H:%M:%S')} : {row.get('DNOPRO')}")
+                code_produit = row.get('DNOPRO')
                 
                 #time.sleep(1)  # ralentis de 1000ms
                 supplier_ids = models.execute_kw(
                     db, uid, password,
                     'product.supplierinfo', 'search',
                     [[
-                        ['product_code', '=', code_produit],
+                        ['product_tmpl_id', '=', code_produit],
                         ['partner_id', '=', partner_id]
                     ]],
                     {'limit': 1}
@@ -120,7 +124,7 @@ async def createOdoo(rows: list, models, db, uid, password):
                 print(f"✅ Produit trouvé pour {code_produit} ➔ ID {product_id} \n\n")
 
                 #unité facture
-                udm_code = row.get('Unite_Facturee')
+                udm_code = row.get('DUNITE')
                 if udm_code == 'UN':
                     udm_id = 1
                 elif udm_code == 'TO':
@@ -141,52 +145,75 @@ async def createOdoo(rows: list, models, db, uid, password):
                         'fields' : ['name']
                     }
                     )[0]
-                print(f"✅ Unités de mesure récupéré -> {row.get('Unite_Facturee')} - {udm_id} : {udm.get('name')}")
+                print(f"✅ Unités de mesure récupéré -> {row.get('DUNITE')} - {udm_id} : {udm.get('name')}")
                 
                 invoice_lines.append([0, 0, {
                     'product_id': product_id,
-                    'quantity': row['Quantite_Facturee'],
+                    'product_qty': row['DQTCDE'],
                     #'product_uom_id': udm.get('name'),
-                    'price_unit': row['Prix_Unitaire']
+                    'price_unit': row['DPXACH']
                 }])
 
-            if not invoice_lines:
-                print("❌ Aucune ligne de produit valide à créer. Annulation.")
-                return
+                if not invoice_lines:
+                    print("❌ Aucune ligne de produit valide à créer. Annulation.")
+                    return
+
+            date_order = f"{invoice_date[0:4]}-{invoice_date[4:6]}-{invoice_date[6:8]}"
+            date_planned = f"{invoice_date_due[0:4]}-{invoice_date_due[4:6]}-{invoice_date_due[6:8]}"
 
             # Construction de la facture
             sendAccountMove = {
-                "move_type": "in_invoice",
+                #"move_type": "in_invoice",
                 "partner_id": partner_id,
-                "invoice_partner_display_name": name_fournisseur,
-                "name": numero_facture,
-                "ref": ref_facture,
-                "invoice_date": invoice_date,
-                "invoice_date_due": invoice_date_due,
-                "invoice_line_ids": invoice_lines
+                #"invoice_partner_display_name": name_fournisseur,
+                #"name": numero_facture,
+                "partner_ref": ref_facture,
+                "date_order": date_order,
+                "date_planned": date_planned,
+                'picking_type_id': rows['company_id'],
+                'state' : 'cancel',
+                "order_line": invoice_lines
             }
-
+            
+            commande_odoo = convert_decimal(sendAccountMove)
+            return commande_odoo
+            '''
             # Debug JSON
             #import json
-            print("📦 Facture à envoyer à Odoo :")
+            print("📦 Facture à envoyer à Odoo : ")
+            print(commande_odoo)
             #print(json.dumps(sendAccountMove, indent=2))
             
             # Envoi
+            
+            
             try:
                 
                 move_id = models.execute_kw(
                     db, uid, password,
-                    'account.move', 'create',
-                    [sendAccountMove]
+                    'purchase.order', 'create',
+                    [commande_odoo]
                 )
                 
-                print(f"✅📤 [SUCCESS] Facture Odoo créée avec ID {move_id} \n\n")
+                print(f"✅📤 [SUCCESS] Commande GESICA Odoo créée avec ID {move_id} \n\n")
             except xmlrpc.client.Fault as e:
                 #Retourne tous les erreur odoo
                 #Erreur odoo si facture existe sera retrouné
                 print(f"❌ Erreur Envoi XML-RPC Odoo : {e.faultString} \n\n")
-            
+            '''
         except xmlrpc.client.Fault as e:
             print(f"❌ Erreur XML-RPC Odoo : {e.faultString}")
         except Exception as e:
             print(f"🔥 Erreur récupération facture : {str(e)}")
+            
+            
+from decimal import Decimal
+
+def convert_decimal(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, dict):
+        return {k: convert_decimal(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [convert_decimal(i) for i in obj]
+    return obj

@@ -68,6 +68,23 @@ class CRUD:
             print('Erreur :', err)
             
     
+    #Méthode READ ALL
+    async def readAll(self,):
+        cnx = self.connexion
+        cursor = cnx.cursor(dictionary=True)  # pour récupérer un dict et comparer facilement
+        
+        #print(numero_facture)
+        try:
+            query = "SELECT * FROM exportgesica.CMD400"
+            cursor.execute(query,)
+            resultat = cursor.fetchall()
+            cursor.close()
+            
+            return resultat  # soit None soit un dict complet
+            
+        except mysql.connector.Error as err:
+            print('Erreur :', err)
+    
     # Méthode UPDATE
     def update(self, datas: dict):
         cnx = self.connexion

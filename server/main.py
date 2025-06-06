@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import requests
 import base64
-import datetime
+from datetime import datetime , timedelta
 import os
 from dotenv import load_dotenv
 from typing import Optional
@@ -27,6 +27,7 @@ from datetime import datetime
 
 from ConnectOdooFramework import createOdoo
 from createOdoo import createOdoo
+from createOdooGesica import createOdooGesica
 
 
 # Chargement des variables d'environnement
@@ -215,6 +216,55 @@ def home(request : Request):
             'year' : datetime.now().year
         })
     '''
+
+
+#GET COMMANDES DEPUIS GESICA
+@app.get('/Commandes_Gesica')
+async def get_commandes_gesica():
+    
+    try:
+        crud = CRUD()
+        resultat = await crud.readAll()
+        purchase = defaultdict(list)
+
+        for index, row in enumerate(resultat):
+            #print(f'\n Boucle => {index + 1} \n')
+            purchase[row["ENOCOM"]].append(row)
+
+        max_factures = 2
+        for i, (numero_facture, lignes) in enumerate(purchase.items()):
+            print(f'📦 Traitement de la facture {numero_facture} contenant {len(lignes)} lignes')
+
+            if i >= max_factures:
+                print(f"🔔 Limite atteinte ({max_factures} factures). Arrêt du traitement.")
+                break
+            
+            # Appel à createOdooGesica pour construire la commande
+            commande_odoo = await createOdooGesica(
+                lignes, models, db, uid, password
+            )
+
+            print('commande odoo', commande_odoo)
+            if commande_odoo:
+                
+                try:
+                    move_id = models.execute_kw(
+                        db, uid, password,
+                        'purchase.order', 'create',
+                        [commande_odoo]
+                    )
+                    print(f"✅📤 Commande Odoo créée avec ID {move_id} pour facture {numero_facture}")
+                except xmlrpc.client.Fault as e:
+                    print(f"❌ Erreur XML-RPC Odoo : {e.faultString}")
+                    
+        #print('RETOUR PURCHASE ', purchase)
+        return JSONResponse(content={"message": "Import terminé avec succès."}, status_code=200)
+
+    except Exception as e:
+        print(f'ERREUR: {e}')
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 ### FACTURES
 @app.get("/factures/")
 async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = API_KEY_JOUR):
@@ -266,26 +316,7 @@ async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = API_KEY_J
         if Urcoopa:
             print('✅ [SUCCESS] Fin ajout facture bdd')
             print('📤[INFO] Début ajout facture Odoo')
-            from collections import defaultdict
-            import xmlrpc.client
-                        
-            # Paramètres
-            url = 'https://sdpmajdb-odoo17-dev-staging-sicalait-20406522.dev.odoo.com/'
-            db = 'sdpmajdb-odoo17-dev-staging-sicalait-20406522'
-            username = 'info.sdpma@sicalait.fr'
-            password = 'nathalia974'
             
-            # Authentification
-            info = xmlrpc.client.ServerProxy(f'{url}/xmlrpc/2/common')
-            uid = info.authenticate(db, username, password, {})
-
-            if not uid:
-                print("❌ Échec de l'authentification.")
-                return
-            
-            print(f"✅ Authentification réussie. UID: {uid} - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} \n\n")
-            models = xmlrpc.client.ServerProxy(f'{url}/xmlrpc/2/object')
-    
             
             factures_groupées = defaultdict(list)
 
@@ -336,6 +367,15 @@ async def envoyer_commande():
         
         
         print('[INFO] 🌐 init commande')
+        
+        #filtre par date
+        
+        date_end = datetime.now() # on recupere la date maintenant (int)
+        date_start = date_end - timedelta(days=2) # on soustrait 2jours (int)
+        #date_start = date_end - timedelta(days=int(os.getenv('DATE_JOUR'))) # on soustrait 2jours (int)
+
+        date_start_ = date_start.strftime('%Y-%m-%d 00:00:00') # date de départ strftime
+        date_end_ = date_end.strftime('%Y-%m-%d 23:59:59') # date fin str
     
         commandes = models.execute_kw(
             db, uid, password,
@@ -343,7 +383,10 @@ async def envoyer_commande():
             #'search',
             'search_read',
             #'search_count',
-            [[]],
+            [[
+                ['date_order', '>=', date_start_], #depart Jours - 2
+                ['date_order', '<=', date_end_] # fin jours present
+            ]],
             {
                 #'limit' : 10,
                 'order': 'id asc'
@@ -355,12 +398,12 @@ async def envoyer_commande():
             #print(commande.get('partner_id'), commande.get('state'))
             partner_urcoopa = commande.get('partner_id')
             
+            #filtre par urcoopa
             if partner_urcoopa[1] != 'URCOOPA':
                 print('[FAULT] ❌ FAUSSE ALERTE - NON URCOOPA ', partner_urcoopa , '\n')
                 continue
                 
-            print('[SUCCESS] ✅  BINGO URCOOPA')
-            
+            print('[SUCCESS] ✅  BINGO URCOOPA')      
             # ---------------------
             # 1. 📦 Récupérer la commande Odoo
             # ---------------------
@@ -427,7 +470,7 @@ async def envoyer_commande():
                 # ---------------------
                 ligne_commande = []
                 for i, ligne in enumerate(products):
-                                        
+                    
                     #conditions pour recupéré products s'il y a commentaire
                     if not ligne['product_id']:
                         commentaire += f" - {ligne['name']} ;"
@@ -456,23 +499,27 @@ async def envoyer_commande():
                     print('-> supplierinfo_ids récupéré: ', supplierinfo_ids)
                     
                     
-                    # Lire les infos
+                    # Lire les infos product code à enlever si besoin
                     product_code = 'N/A'
                     if supplierinfo_ids:
+                        
                         supplierinfo_data = models.execute_kw(
                             db, uid, password,
                             'product.supplierinfo', 'read',
                             [supplierinfo_ids],
                             {'fields': ['product_code']}
                         )
-                        if supplierinfo_data and supplierinfo_data[0].get('product_code'):
-                            product_code = supplierinfo_data[0]['product_code']
-                            
+                        #if supplierinfo_data and supplierinfo_data[0].get('product_code'):
+                        for row in supplierinfo_data:
+                            if row['product_code']:
+                                product_code = row['product_code']
+                                print('[INFO] Code supplierinfo_product_code récupéré :', product_code)
+
                     print('[INFO] Code fournisseur récupéré :', product_code)
                     
                     
                     
-                    # Extrait code interne si besoin (crochets)
+                    # Extrait code interne si besoin ( code dans crochets)
                     code_interne = ligne['name'].split("]")[0].replace("[", "")
                     
                     ligne_commande.append({
@@ -481,17 +528,25 @@ async def envoyer_commande():
                         "Libelle_Produit": ligne['name'],
                         "Poids_Commande": ligne['product_qty']
                     })
-
+                
+                
                 #print('[INFO] 📦 Commandes final : ', json.dumps(ligne_commande, indent=2))
+                
+                #on enleve gesica
+                reference_partenaire = commande.get('partner_ref')
+                
+                if reference_partenaire:
+                    reference = reference_partenaire.replace('GESICA', "").strip()
+                else :
+                    reference = commande.get('name').strip()
+                    
                 commande_json = {
                     "Commande": [
                         {
                             "Societe": "UR",
-                            #"Societe": "SI",
-                            #"Societe": commande['company_id'][1],
                             "Code_Client": "5024",
-                            "Numero_Commande": commande["name"],
-                            "Nom_Client": commande["picking_type_id"][1],
+                            "Numero_Commande": reference,
+                            "Nom_Client": json.loads(f'"{commande.get('picking_type_id')[1]}"'),
                             "Code_Adresse_Livraison": "01",
                             "Commentaire": commentaire,
                             "Date_Livraison_Souhaitee": commande["date_order"].replace("-", "")[:8],
@@ -501,8 +556,9 @@ async def envoyer_commande():
                         }
                     ]
                 }
-
-                print("✅ Commande construite :", json.dumps(commande_json, indent=2))
+                
+                print("✅ Commande construite :", json.dumps(commande_json, indent=2, ensure_ascii=False))
+                
                 # ---------------------
                 # 3. 📤 Envoi via SOAP
                 # ---------------------
@@ -518,8 +574,8 @@ async def envoyer_commande():
                     xCleAPI=API_KEY_URCOOPA,
                     jCommande=jCommande_value
                 )
-
-                print("[INFO] Réponse Urcoopa :", response)
+                
+                print("[INFO] ", response)
                 
                 #on décortique pour vérifier qu'il y a erreur ou pas
                 response = response.split()
@@ -536,17 +592,18 @@ async def envoyer_commande():
                     ###
                     ###
                     #return JSONResponse(content={"status": "OK", "response": response})
+                    
             else : 
                 print('[FAULT] ❌ ZUT COMMANDE TOUJOURS EN BROUILLON \n')    
-            
+                
     except Fault as soap_err:
         print("❌ Erreur SOAP :", soap_err)
         raise HTTPException(status_code=500, detail=str(soap_err))
-
+    '''
     except Exception as e:
         print("❌ Erreur générale :", e)
         raise HTTPException(status_code=500, detail=str(e))
-
+    '''
 ######################################################
 #recuperation adherent dans base de données exportOdoo
 @app.get('/factureAdherentUrcoopa', response_class=HTMLResponse)
