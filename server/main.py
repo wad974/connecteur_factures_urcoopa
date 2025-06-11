@@ -85,21 +85,23 @@ if not uid:
 print(f"✅ Authentification réussie. UID: {uid} - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} \n\n")
 models = xmlrpc.client.ServerProxy(f'{url}/xmlrpc/2/object')
 
+#connexion base de données
+print('🌐 init')
+connexion = mysql.connector.connect(
+    host = '172.17.240.18',#host,
+    port='3306',
+    database= 'exportodoo', #dbname 
+    user='root', #user
+    password='S1c@l@1t'
+)
+print('🌐 connexion', connexion)
 
 ######## HOME / RACINE
 @app.get('/', response_class=HTMLResponse)
 def home(request : Request):
     try: 
         print('🌐 init')
-        #connexion base de données
-        connexion = mysql.connector.connect(
-            host = '172.17.240.18',#host,
-            port='3306',
-            database= 'exportodoo', #dbname 
-            user='root', #user
-            password='S1c@l@1t'
-        )
-        print('🌐 connexion', connexion)
+        
         # on recupere le cursor en dictionnaire
         cursorRequete = connexion.cursor(dictionary=True)
         
@@ -364,18 +366,16 @@ async def get_factures(xCleAPI: str = API_KEY_URCOOPA, nb_jours: int = API_KEY_J
 async def envoyer_commande():
 
     try:
-        
-        
         print('[INFO] 🌐 init commande')
         
         #filtre par date
         
         date_end = datetime.now() # on recupere la date maintenant (int)
-        date_start = date_end - timedelta(days=2) # on soustrait 2jours (int)
+        date_start = date_end - timedelta(days=5) # on soustrait 2jours (int)
         #date_start = date_end - timedelta(days=int(os.getenv('DATE_JOUR'))) # on soustrait 2jours (int)
 
-        date_start_ = date_start.strftime('%Y-%m-%d 00:00:00') # date de départ strftime
-        date_end_ = date_end.strftime('%Y-%m-%d 23:59:59') # date fin str
+        date_start_new = date_start.strftime('%Y-%m-%d 00:00:00') # date de départ strftime
+        date_end_new = date_end.strftime('%Y-%m-%d 23:59:59') # date fin str
     
         commandes = models.execute_kw(
             db, uid, password,
@@ -384,12 +384,12 @@ async def envoyer_commande():
             'search_read',
             #'search_count',
             [[
-                ['date_order', '>=', date_start_], #depart Jours - 2
-                ['date_order', '<=', date_end_] # fin jours present
+                ['date_order', '>=', date_start_new], #depart Jours - 2
+                ['date_order', '<=', date_end_new] # fin jours present
             ]],
             {
                 #'limit' : 10,
-                'order': 'id asc'
+                'order': 'id desc'
             }
         )
         
@@ -462,7 +462,8 @@ async def envoyer_commande():
                     [commande['order_line']],
                     {'fields': ['product_id', 'name', 'product_qty']}
                 )
-                print('[INFO] 📦 Voici les produits  : ', json.dumps(products, indent=2))
+                print('[INFO] 📦 Produits récupéré')
+                #print('[INFO] 📦 Voici les produits  : ', json.dumps(products, indent=2))
 
                 commentaire = ''
                 # ---------------------
@@ -478,7 +479,7 @@ async def envoyer_commande():
                         continue
                     
                     product_id = ligne['product_id'][0]
-                    print('-> product_id récupéré: ', product_id)
+                    #print('-> product_id récupéré: ', product_id)
                     
                     # Récupérer le product_tmpl_id
                     product_product = models.execute_kw(
@@ -488,7 +489,7 @@ async def envoyer_commande():
                         {'fields': ['product_tmpl_id']}
                     )[0]
                     product_tmpl_id = product_product['product_tmpl_id'][0]
-                    print('-> product_tmpl_id récupéré: ', product_tmpl_id)
+                    #print('-> product_tmpl_id récupéré: ', product_tmpl_id)
                     
                     # Chercher les ids supplierinfo
                     supplierinfo_ids = models.execute_kw(
@@ -496,7 +497,7 @@ async def envoyer_commande():
                         'product.supplierinfo', 'search',
                         [[['product_tmpl_id', '=', product_tmpl_id]]]
                     )
-                    print('-> supplierinfo_ids récupéré: ', supplierinfo_ids)
+                    #print('-> supplierinfo_ids récupéré: ', supplierinfo_ids)
                     
                     
                     # Lire les infos product code à enlever si besoin
@@ -530,7 +531,8 @@ async def envoyer_commande():
                     })
                 
                 
-                #print('[INFO] 📦 Commandes final : ', json.dumps(ligne_commande, indent=2))
+                #print('[INFO] 📦 lignes produits Commandes final : ', json.dumps(ligne_commande, indent=2))
+                print('[INFO] 📦 lignes produits Commandes final OK!')
                 
                 #on enleve gesica
                 reference_partenaire = commande.get('partner_ref')
@@ -540,11 +542,48 @@ async def envoyer_commande():
                 else :
                     reference = commande.get('name').strip()
                     
+                #requete code client
+                if not commande['company_id']:
+                    continue
+                else:
+                    print( '\n📤 [INFO] REQUETE SQL CODE COMPANY_ID ODOO : ', json.dumps( commande['company_id'][0], indent=2 ))
+                    code = commande['company_id'][0] 
+                    #print(json.dumps( commande, indent=2 ))          
+                    
+                    #requete sic_depot
+                    print('🌐 init SQL')
+                    
+                    # on recupere le cursor en dictionnaire
+                    cursorRequete = connexion.cursor(dictionary=True)
+                    
+                    # on execute la requete sur la table sic urcoopa facture where champs adherent
+                    requete = '''
+                            SELECT * FROM sic_depot
+                            WHERE company_id = %s
+                    '''
+                    
+                    code_urcoopa = ( code,)
+                    cursorRequete.execute(requete, code_urcoopa)
+                    
+                    # on recupere la requete
+                    datas = cursorRequete.fetchall()
+                    print('✅ récupération datas ok !', datas)
+                    #print(json.dumps(datas, indent=2))
+                    
+                    if len(datas) == 0 or datas[0].get('code_urcoopa') is None:
+                        code_client = "0000"
+                        print('Code_Client :', code_client)
+                    
+                    else: 
+                        #"Code_Client": "5024",
+                        code_client = datas[0].get('code_urcoopa')
+                    
                 commande_json = {
                     "Commande": [
                         {
                             "Societe": "UR",
-                            "Code_Client": "5024",
+                            #"Code_Client": "5024",
+                            "Code_Client": code_client,
                             "Numero_Commande": reference,
                             "Nom_Client": json.loads(f'"{commande.get('picking_type_id')[1]}"'),
                             "Code_Adresse_Livraison": "01",
@@ -557,7 +596,7 @@ async def envoyer_commande():
                     ]
                 }
                 
-                print("✅ Commande construite :", json.dumps(commande_json, indent=2, ensure_ascii=False))
+                print("\n✅ Commande construite finale :", json.dumps(commande_json, indent=2, ensure_ascii=False), '\n\n')
                 
                 # ---------------------
                 # 3. 📤 Envoi via SOAP
