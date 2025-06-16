@@ -1,2 +1,0 @@
-01 * * * * curl http://0.0.0.0:9898/factures > /var/log/cronurcoopafactures.txt
-01 * * * * curl http://0.0.0.0:9898/envoyer-commande > /var/log/cronurcoopacommandes.txt
